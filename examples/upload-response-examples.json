@@ -1,0 +1,41 @@
+{
+  "successful_upload": {
+    "status": "success",
+    "total": 120,
+    "inserted": 115,
+    "skipped": 5,
+    "errors": [
+      { "row": 12, "reason": "Invalid geometry type" },
+      { "row": 45, "reason": "Missing required field: name" },
+      { "row": 78, "reason": "Geometry validation failed" },
+      { "row": 89, "reason": "Invalid coordinates" },
+      { "row": 103, "reason": "Duplicate entry" }
+    ]
+  },
+  "failed_upload": {
+    "status": "error",
+    "error": "No .shp file found in ZIP"
+  },
+  "validation_errors": {
+    "status": "success",
+    "total": 50,
+    "inserted": 0,
+    "skipped": 50,
+    "errors": [
+      { "row": 1, "reason": "Invalid geometry type - expected MultiPolygon, got LineString" },
+      { "row": 2, "reason": "Invalid geometry type - expected Point, got Polygon" },
+      { "row": 3, "reason": "Missing geometry" }
+    ]
+  },
+  "partial_success": {
+    "status": "success",
+    "total": 1000,
+    "inserted": 987,
+    "skipped": 13,
+    "errors": [
+      { "row": 156, "reason": "Invalid coordinate system" },
+      { "row": 234, "reason": "Geometry too complex" },
+      { "row": 567, "reason": "Invalid attribute value" }
+    ]
+  }
+}

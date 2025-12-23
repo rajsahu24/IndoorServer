@@ -1,0 +1,61 @@
+{
+  "unit_sample": {
+    "name": "Coffee Shop",
+    "category": "food",
+    "level_id": "L1",
+    "metadata": {
+      "description": "Premium coffee and pastries",
+      "opening_hours": "07:00-22:00",
+      "phone": "+1234567890",
+      "email": "info@coffeeshop.com",
+      "website": "https://coffeeshop.com",
+      "image": "coffee-shop.jpg",
+      "icon": "coffee",
+      "bg_color": "#8B4513",
+      "alt_name": "Café Central"
+    },
+    "show": true,
+    "display_point": true,
+    "accessibility": true,
+    "restriction": false,
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [[[[
+        [-74.006, 40.7128],
+        [-74.005, 40.7128],
+        [-74.005, 40.7138],
+        [-74.006, 40.7138],
+        [-74.006, 40.7128]
+      ]]]]
+    }
+  },
+  "route_sample": {
+    "from_poi_id": "550e8400-e29b-41d4-a716-446655440000",
+    "to_poi_id": "550e8400-e29b-41d4-a716-446655440001",
+    "level_id": "L1",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-74.006, 40.7128],
+        [-74.0055, 40.7133],
+        [-74.005, 40.7138]
+      ]
+    }
+  },
+  "poi_sample": {
+    "name": "Main Entrance",
+    "type": "entrance",
+    "floor": "1",
+    "building_id": "building_001",
+    "metadata": {
+      "icon": "door",
+      "bg_color": "#4CAF50",
+      "accessibility": true,
+      "operating_hours": "24/7"
+    },
+    "geometry": {
+      "type": "Point",
+      "coordinates": [-74.006, 40.7128]
+    }
+  }
+}
