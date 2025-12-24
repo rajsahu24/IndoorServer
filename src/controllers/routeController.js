@@ -10,7 +10,7 @@ const routeController = {
           id: route.id,
           from_poi_id: route.from_poi_id,
           to_poi_id: route.to_poi_id,
-          level_id: route.level_id,
+          floor_id: route.floor_id,
           distance: route.distance,
           created_at: route.created_at,
           updated_at: route.updated_at
@@ -33,7 +33,7 @@ const routeController = {
             id: route.id,
             from_poi_id: route.from_poi_id,
             to_poi_id: route.to_poi_id,
-            level_id: route.level_id,
+            floor_id: route.floor_id,
             distance: route.distance,
             created_at: route.created_at,
             updated_at: route.updated_at
@@ -59,7 +59,7 @@ const routeController = {
           id: route.id,
           from_poi_id: route.from_poi_id,
           to_poi_id: route.to_poi_id,
-          level_id: route.level_id,
+          floor_id: route.floor_id,
           distance: route.distance,
           created_at: route.created_at,
           updated_at: route.updated_at
@@ -83,7 +83,7 @@ const routeController = {
           id: route.id,
           from_poi_id: route.from_poi_id,
           to_poi_id: route.to_poi_id,
-          level_id: route.level_id,
+          floor_id: route.floor_id,
           distance: route.distance,
           created_at: route.created_at,
           updated_at: route.updated_at

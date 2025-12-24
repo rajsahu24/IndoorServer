@@ -55,8 +55,8 @@ CREATE INDEX idx_routes_geometry ON routes USING GIST (geometry);
 CREATE INDEX idx_pois_geometry ON pois USING GIST (geometry);
 
 -- Additional indexes
-CREATE INDEX idx_units_level_id ON units (level_id);
-CREATE INDEX idx_routes_level_id ON routes (level_id);
+CREATE INDEX idx_units_floor_id ON units (floor_id);
+CREATE INDEX idx_routes_floor_id ON routes (floor_id);
 CREATE INDEX idx_pois_type ON pois (type);
 CREATE INDEX idx_pois_building_id ON pois (building_id);
 

@@ -40,7 +40,7 @@ const navigationController = {
         properties: {
           id: route.id,
           distance: route.distance,
-          level_id: route.level_id
+          floor_id: route.floor_id
         },
         geometry: JSON.parse(route.geometry)
       });
