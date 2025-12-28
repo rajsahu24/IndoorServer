@@ -17,6 +17,7 @@ const roomRoutes = require('./routes/room');
 const bookingRoutes = require('./routes/booking');
 const guestRoutes = require('./routes/guest');
 const roomAllocationRoutes = require('./routes/roomAllocationRoutes');
+const requestFromData = require('./routes/requestFromData');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/room-allocations', roomAllocationRoutes);
+app.use('/api/request-from-data', requestFromData);
 
 
 // Health check

@@ -232,6 +232,20 @@ CREATE TABLE notifications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE request_form_data (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    full_name VARCHAR(255) NOT NULL,
+    company VARCHAR(255),
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    preferred_date DATE,
+    number_of_buildings VARCHAR(255),
+    message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 -- Additional indexes
 CREATE INDEX idx_hotels_building_id ON hotels (building_id);
 CREATE INDEX idx_floors_building_id ON floors (building_id);
