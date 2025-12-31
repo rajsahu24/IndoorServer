@@ -34,7 +34,8 @@ class POI {
   }
 
   static async update(id, data) {
-    const { name, category, floor_id, building_id, metadata, geom } = data;
+    const { name, category, floor_id, building_id, metadata } = data.properties;
+    const geom = data.geometry;
     const query = `
       UPDATE pois 
       SET name = $2, category = $3, floor_id = $4, building_id = $5, metadata = $6, geom = ST_GeomFromGeoJSON($7)
