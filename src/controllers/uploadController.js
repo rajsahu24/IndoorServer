@@ -170,21 +170,24 @@ const uploadController = {
           delete metadata.building_id;
           delete metadata.id;
           
-          // Parse metadata string into object if it's a string
-          let parsedMetadata = metadata;
+          // Parse metadata string and merge into outer object
+          let parsedMetadata = { ...metadata };
           if (typeof metadata.metadata === 'string') {
             try {
-              const metadataObj = {};
               metadata.metadata.split(',').forEach(pair => {
                 const [key, value] = pair.split(':').map(s => s.trim());
                 if (key && value) {
-                  metadataObj[key] = value;
+                  parsedMetadata[key] = value;
                 }
               });
-              parsedMetadata.metadata = metadataObj;
+              delete parsedMetadata.metadata;
             } catch (e) {
-              // Keep original string if parsing fails
+              // Keep original if parsing fails
             }
+          } else if (typeof metadata.metadata === 'object' && metadata.metadata) {
+            // Merge metadata object properties into outer object
+            Object.assign(parsedMetadata, metadata.metadata);
+            delete parsedMetadata.metadata;
           }
           
 
