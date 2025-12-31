@@ -6,17 +6,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE units (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL, 
-    category VARCHAR(100), 
+    -- category VARCHAR(100),
     feature_type VARCHAR(20) DEFAULT 'unit' CHECK (feature_type = 'unit'), 
     floor_id UUID NOT NULL REFERENCES floors(id), 
-    area DECIMAL GENERATED ALWAYS AS (ST_Area(geometry::geography)) STORED,  
+    building_id VARCHAR(100),
+    -- area DECIMAL GENERATED ALWAYS AS (ST_Area(geometry::geography)) STORED,  
     metadata JSONB DEFAULT '{}', 
-    show BOOLEAN DEFAULT true, 
-    unit_type VARCHAR(255), 
-    display_point BOOLEAN DEFAULT true, 
-    accessibility BOOLEAN DEFAULT false, 
-    restriction BOOLEAN DEFAULT false, 
-    geometry GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
+    -- show BOOLEAN DEFAULT true, 
+    -- unit_type VARCHAR(255), 
+    -- display_point BOOLEAN DEFAULT true, 
+    -- accessibility BOOLEAN DEFAULT false, 
+    -- restriction BOOLEAN DEFAULT false, 
+    geom GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
 );
@@ -28,6 +29,7 @@ CREATE TABLE routes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), 
     from_poi_id UUID, 
     to_poi_id UUID, 
+    building_id VARCHAR(100),
     floor_id UUID NOT NULL REFERENCES floors(id),  
     distance DECIMAL GENERATED ALWAYS AS (ST_Length(geometry::geography)) STORED,
     geometry GEOMETRY(LINESTRING, 4326) NOT NULL, 
@@ -39,12 +41,11 @@ CREATE TABLE routes (
 CREATE TABLE pois (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    type VARCHAR(50) NOT NULL,
+    category VARCHAR(50),
     floor_id UUID  REFERENCES floors(id),
-    building_id VARCHAR(100),
     metadata JSONB DEFAULT '{}',
-    floor VARCHAR(100),
-    geometry GEOMETRY(POINT, 4326) NOT NULL,
+    -- floor_name VARCHAR(100),
+    geom GEOMETRY(POINT, 4326) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -104,7 +105,7 @@ CREATE TABLE hotels (
 CREATE TABLE floors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     building_id UUID NOT NULL REFERENCES buildings(id),
-    floor_number VARCHAR(10) NOT NULL,
+    floor_name VARCHAR(10) NOT NULL,
     name VARCHAR(255),
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -119,7 +120,7 @@ CREATE TABLE rooms (
     unit_id UUID NOT NULL REFERENCES units(id),
     room_type VARCHAR(50),
     capacity INTEGER,
-    amenities JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
     status VARCHAR(20) DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -133,7 +134,7 @@ CREATE TABLE venues (
     unit_id UUID NOT NULL REFERENCES units(id),
     venue_type VARCHAR(50),
     capacity INTEGER,
-    amenities JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -141,10 +142,11 @@ CREATE TABLE venues (
 -- Bookings table
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    hotel_id UUID NOT NULL REFERENCES hotels(id),
-    booking_type VARCHAR(50) NOT NULL,
-    client_name VARCHAR(255) NOT NULL,
-    client_contact JSONB DEFAULT '{}',
+    floors_id 
+    booking_category VARCHAR(50) NOT NULL,
+    host_id VARCHAR(100)
+    host_name VARCHAR(255) NOT NULL,
+    host_metadata JSONB DEFAULT '{}',
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     guest_count INTEGER,
@@ -245,12 +247,34 @@ CREATE TABLE request_form_data (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- RBAC Model
+CREATE TYPE user_role AS ENUM ('admin', 'host', 'guest');
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(20) UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role user_role NOT NULL DEFAULT 'guest',
+    name VARCHAR(255) NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    building_id UUID REFERENCES buildings(id),
+    unit_id UUID REFERENCES units(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 
 -- Additional indexes
 CREATE INDEX idx_hotels_building_id ON hotels (building_id);
 CREATE INDEX idx_floors_building_id ON floors (building_id);
 CREATE INDEX idx_rooms_floor_id ON rooms (floor_id);
-CREATE INDEX idx_rooms_unit_id ON rooms (unit_id);
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_role ON users (role);
+
+-- Update triggers for new tables
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();rooms_unit_id ON rooms (unit_id);
 CREATE INDEX idx_venues_unit_id ON venues (unit_id);
 CREATE INDEX idx_guests_booking_id ON guests (booking_id);
 CREATE INDEX idx_room_allocations_guest_id ON room_allocations (guest_id);

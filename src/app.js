@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const unitRoutes = require('./routes/units');
@@ -18,6 +19,7 @@ const bookingRoutes = require('./routes/booking');
 const guestRoutes = require('./routes/guest');
 const roomAllocationRoutes = require('./routes/roomAllocationRoutes');
 const requestFromData = require('./routes/requestFromData');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +27,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 
 // Routes
@@ -43,6 +46,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/room-allocations', roomAllocationRoutes);
 app.use('/api/request-from-data', requestFromData);
+app.use('/api/auth', authRoutes);
 
 
 // Health check
