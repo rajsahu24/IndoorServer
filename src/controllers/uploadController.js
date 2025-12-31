@@ -165,22 +165,20 @@ const uploadController = {
 
           const metadata = { ...properties };
           delete metadata.name;
-          delete metadata.type;
-          delete metadata.floor;
+          delete metadata.category;
           delete metadata.floor_id;
-          delete metadata.id;
-          delete metadata.metadata;
+          delete metadata.building_id;
 
           const query = `
-            INSERT INTO pois (name, type, floor, floor_id, metadata, geometry)
+            INSERT INTO pois (name, category, floor_id, building_id, metadata, geom)
             VALUES ($1, $2, $3, $4, $5, ST_GeomFromGeoJSON($6))
           `;
 
           await client.query(query, [
             properties.name || 'Unnamed',
-            properties.type || 'unknown',
-            properties.floor || null,
+            properties.category || null,
             properties.floor_id || null,
+            properties.building_id || null,
             JSON.stringify(metadata),
             JSON.stringify(geometry)
           ]);
