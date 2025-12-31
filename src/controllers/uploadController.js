@@ -137,98 +137,107 @@ const uploadController = {
     }
   },
 
-  async uploadPois(req, res) {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+async uploadPois(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
 
-    const client = await pool.connect();
-    let total = 0, inserted = 0, skipped = 0;
-    const errors = [];
+  const client = await pool.connect();
+  let total = 0, inserted = 0, skipped = 0;
+  const errors = [];
 
-    try {
-      const features = await ShapefileService.extractAndParse(req.file.path);
-      total = features.length;
+  try {
+    const features = await ShapefileService.extractAndParse(req.file.path);
+    total = features.length;
 
-      await client.query('BEGIN');
+    await client.query('BEGIN');
 
-      for (let i = 0; i < features.length; i++) {
-        try {
-          const feature = features[i];
-          const { geometry, properties } = feature;
+    for (let i = 0; i < features.length; i++) {
+      try {
+        const feature = features[i];
+        const { geometry, properties } = feature;
 
-          if (!ShapefileService.validateGeometryType(geometry, 'Point')) {
-            errors.push({ row: i + 1, reason: 'Invalid geometry type' });
-            skipped++;
-            continue;
-          }
+        if (!ShapefileService.validateGeometryType(geometry, 'Point')) {
+          errors.push({ row: i + 1, reason: 'Invalid geometry type' });
+          skipped++;
+          continue;
+        }
 
-          const metadata = { ...properties };
-          delete metadata.name;
-          delete metadata.category;
-          delete metadata.floor_id;
-          delete metadata.building_id;
-          delete metadata.id;
-          
-          // Parse metadata string and merge into outer object
-          let parsedMetadata = { ...metadata };
-          if (typeof metadata.metadata === 'string') {
+        // Handle metadata - it could be object or string
+        let metadata = {};
+        
+        if (properties.metadata) {
+          if (typeof properties.metadata === 'object') {
+            // Already an object
+            metadata = properties.metadata;
+          } else if (typeof properties.metadata === 'string') {
             try {
-              metadata.metadata.split(',').forEach(pair => {
+              // Try to parse as JSON first
+              metadata = JSON.parse(properties.metadata);
+            } catch (e) {
+              // If not JSON, parse as key:value format
+              const parsedMeta = {};
+              properties.metadata.split(',').forEach(pair => {
                 const [key, value] = pair.split(':').map(s => s.trim());
                 if (key && value) {
-                  parsedMetadata[key] = value;
+                  parsedMeta[key] = isNaN(value) ? value : Number(value);
                 }
               });
-              delete parsedMetadata.metadata;
-            } catch (e) {
-              // Keep original if parsing fails
+              metadata = parsedMeta;
             }
-          } else if (typeof metadata.metadata === 'object' && metadata.metadata) {
-            // Merge metadata object properties into outer object
-            Object.assign(parsedMetadata, metadata.metadata);
-            delete parsedMetadata.metadata;
           }
-          
-
-          const query = `
-            INSERT INTO pois (name, category, floor_id, building_id, metadata, geom)
-            VALUES ($1, $2, $3, $4, $5, ST_GeomFromGeoJSON($6))
-          `;
-
-          await client.query(query, [
-            properties.name || 'Unnamed',
-            properties.category || null,
-            properties.floor_id || null,
-            properties.building_id || null,
-            JSON.stringify(parsedMetadata),
-            JSON.stringify(geometry)
-          ]);
-
-          inserted++;
-        } catch (error) {
-          errors.push({ row: i + 1, reason: error.message });
-          skipped++;
         }
+
+        // Add any other properties that aren't main fields
+        const otherProps = { ...properties };
+        delete otherProps.name;
+        delete otherProps.category;
+        delete otherProps.floor_id;
+        delete otherProps.building_id;
+        delete otherProps.id;
+        delete otherProps.metadata;
+
+        // Merge other properties into metadata
+        metadata = { ...metadata, ...otherProps };
+
+        const query = `
+          INSERT INTO pois (name, category, floor_id, building_id, metadata, geom)
+          VALUES ($1, $2, $3, $4, $5::jsonb, ST_GeomFromGeoJSON($6))
+        `;
+
+        await client.query(query, [
+          properties.name || 'Unnamed',
+          properties.category || null,
+          properties.floor_id || null,
+          properties.building_id || null,
+          metadata,
+          JSON.stringify(geometry)
+        ]);
+
+        inserted++;
+      } catch (error) {
+        errors.push({ row: i + 1, reason: error.message });
+        skipped++;
       }
-
-      await client.query('COMMIT');
-
-      res.json({
-        status: 'success',
-        total,
-        inserted,
-        skipped,
-        errors
-      });
-
-    } catch (error) {
-      await client.query('ROLLBACK');
-      res.status(500).json({ error: error.message });
-    } finally {
-      client.release();
     }
+
+    await client.query('COMMIT');
+
+    res.json({
+      status: 'success',
+      total,
+      inserted,
+      skipped,
+      errors
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
   }
+}
 };
 
 module.exports = uploadController;
