@@ -168,6 +168,8 @@ const uploadController = {
           delete metadata.type;
           delete metadata.floor;
           delete metadata.floor_id;
+          delete metadata.id;
+          delete metadata.metadata;
 
           const query = `
             INSERT INTO pois (name, type, floor, floor_id, metadata, geometry)

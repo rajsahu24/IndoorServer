@@ -9,8 +9,8 @@ const poiController = {
         properties: {
           id: poi.id,
           name: poi.name,
-          type: poi.type,
-          floor: poi.floor,
+          category: poi.category,
+          floor_id: poi.floor_id,
           building_id: poi.building_id,
           metadata: poi.metadata,
           created_at: poi.created_at,
@@ -33,8 +33,8 @@ const poiController = {
           properties: {
             id: poi.id,
             name: poi.name,
-            type: poi.type,
-            floor: poi.floor,
+            category: poi.category,
+            floor_id: poi.floor_id,
             building_id: poi.building_id,
             metadata: poi.metadata,
             created_at: poi.created_at,
@@ -60,8 +60,8 @@ const poiController = {
         properties: {
           id: poi.id,
           name: poi.name,
-          type: poi.type,
-          floor: poi.floor,
+          category: poi.category,
+          floor_id: poi.floor_id,
           building_id: poi.building_id,
           metadata: poi.metadata,
           created_at: poi.created_at,
@@ -85,8 +85,8 @@ const poiController = {
         properties: {
           id: poi.id,
           name: poi.name,
-          type: poi.type,
-          floor: poi.floor,
+          category: poi.category,
+          floor_id: poi.floor_id,
           building_id: poi.building_id,
           metadata: poi.metadata,
           created_at: poi.created_at,

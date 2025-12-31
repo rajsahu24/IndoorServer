@@ -44,6 +44,7 @@ CREATE TABLE pois (
     category VARCHAR(50),
     floor_id UUID  REFERENCES floors(id),
     metadata JSONB DEFAULT '{}',
+    building_id UUID REFERENCES bookings(id)
     -- floor_name VARCHAR(100),
     geom GEOMETRY(POINT, 4326) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
