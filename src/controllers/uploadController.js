@@ -170,6 +170,23 @@ const uploadController = {
           delete metadata.building_id;
           delete metadata.id;
           
+          // Parse metadata string into object if it's a string
+          let parsedMetadata = metadata;
+          if (typeof metadata.metadata === 'string') {
+            try {
+              const metadataObj = {};
+              metadata.metadata.split(',').forEach(pair => {
+                const [key, value] = pair.split(':').map(s => s.trim());
+                if (key && value) {
+                  metadataObj[key] = value;
+                }
+              });
+              parsedMetadata.metadata = metadataObj;
+            } catch (e) {
+              // Keep original string if parsing fails
+            }
+          }
+          
 
           const query = `
             INSERT INTO pois (name, category, floor_id, building_id, metadata, geom)
@@ -181,7 +198,7 @@ const uploadController = {
             properties.category || null,
             properties.floor_id || null,
             properties.building_id || null,
-            JSON.stringify(metadata),
+            JSON.stringify(parsedMetadata),
             JSON.stringify(geometry)
           ]);
 
