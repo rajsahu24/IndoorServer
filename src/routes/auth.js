@@ -9,9 +9,9 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 
 // Protected routes
-router.get('/users', auth, requireRole(['admin']), authController.getUsers);
-router.put('/users/:id/role', auth, requireRole(['admin']), authController.updateUserRole);
-router.put('/users/:id', auth, requireRole(['admin']), authController.updateUserPut);
-router.patch('/users/:id', auth, requireRole(['admin']), authController.updateUserPatch);
-
+router.get('/users', auth, requireRole(['admin','host']), authController.getUsers);
+router.get('/users/:id', auth, requireRole(['admin', 'host']), authController.getUserById);
+router.put('/users/:id/role', auth, requireRole(['admin','host']), authController.updateUserRole);
+router.put('/users/:id', auth, requireRole(['admin','host']), authController.updateUserPut);
+router.patch('/users/:id', auth, requireRole(['admin','host']), authController.updateUserPatch);
 module.exports = router;

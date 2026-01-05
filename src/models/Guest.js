@@ -6,35 +6,41 @@ class Guest {
    */
   static async create(data) {
     const {
-      booking_id,
       name,
       phone,
       email,
-      guest_type = 'guest',
+      status,
       metadata = {}
     } = data;
 
-    if (!booking_id || !name) {
-      throw new Error('booking_id and name are required');
-    }
 
     const query = `
       INSERT INTO guests
-        (booking_id, name, phone, email, guest_type, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6)
+        (  name, phone, email, status, metadata)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
 
     const result = await pool.query(query, [
-      booking_id,
+
       name,
       phone,
       email,
-      guest_type,
+      status,
       metadata
     ]);
 
     return result.rows[0];
+  }
+
+  static async findAll() {
+    const query = `
+      SELECT *
+      FROM guests
+      ORDER BY created_at ASC
+    `;  
+    const result = await pool.query(query);
+    return result.rows;
   }
 
   /**
@@ -70,7 +76,7 @@ class Guest {
    * Update guest
    */
   static async update(id, data) {
-    const { name, phone, email, guest_type, metadata } = data;
+    const { name, phone, email, status, metadata } = data;
 
     const query = `
       UPDATE guests
@@ -78,7 +84,7 @@ class Guest {
         name = COALESCE($2, name),
         phone = COALESCE($3, phone),
         email = COALESCE($4, email),
-        guest_type = COALESCE($5, guest_type),
+        status = COALESCE($5, status),
         metadata = COALESCE($6, metadata),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
@@ -90,7 +96,7 @@ class Guest {
       name,
       phone,
       email,
-      guest_type,
+      status,
       metadata
     ]);
 
@@ -109,6 +115,48 @@ class Guest {
 
     const result = await pool.query(query, [id]);
     return result.rows[0];
+  }
+
+  /**
+   * Bulk create guests from file data
+   */
+  static async bulkCreate(guestsData) {
+    const client = await pool.connect();
+    const results = { successful: [], failed: [] };
+
+    try {
+      await client.query('BEGIN');
+
+      for (const guestData of guestsData) {
+        try {
+          const { name, phone, email, metadata = {} } = guestData;
+          
+          if (!name) {
+            throw new Error('Name is required');
+          }
+
+          const query = `
+            INSERT INTO guests (name, phone, email, metadata)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+          `;
+
+          const result = await client.query(query, [name, phone, email, metadata]);
+          results.successful.push(result.rows[0]);
+        } catch (error) {
+          results.failed.push({ data: guestData, error: error.message });
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    return results;
   }
 }
 

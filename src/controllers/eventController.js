@@ -11,6 +11,15 @@ const eventController = {
     }
   },
 
+  async getEvents(req, res) {
+    try {
+      const events = await Event.findAll();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async assignGuests(req, res) {
     try {
       const { event_id } = req.params;
@@ -31,6 +40,18 @@ const eventController = {
     }
   },
 
+
+  async getEventById(req, res) {
+    try {
+      const event = await Event.getById(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }},
+
   async getEventWithVenue(req, res) {
     try {
       const event = await Event.getEventWithVenue(req.params.id);
@@ -38,6 +59,34 @@ const eventController = {
         return res.status(404).json({ error: 'Event not found' });
       }
       res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+
+  async update(req, res) {
+    try {
+      const updatedEvent = await Event.update(
+        req.params.id,
+        req.body
+      ); 
+      if (!updatedEvent) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      res.json(updatedEvent);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  async delete(req, res) {
+    try {
+      const deletedEvent = await Event.delete(req.params.id);
+      if (!deletedEvent) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      res.json({ message: 'Event deleted successfully' });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

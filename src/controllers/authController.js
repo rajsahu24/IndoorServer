@@ -96,11 +96,27 @@ const authController = {
     }
   },
 
+  async getUserById(req, res) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   async updateUserPut(req, res) {
     try {
       const { id } = req.params;
-      const allowed = ['email', 'phone', 'role', 'name', 'is_active', 'password'];
+      const allowed = ['email', 'phone', 'role', 'name', 'password', 'building_id', 'unit_id', 'booking_id',   'metadata'];
       const hasValid = Object.keys(req.body || {}).some(k => allowed.includes(k));
+      console.log(hasValid);
       if (!hasValid) {
         return res.status(400).json({ error: 'No valid fields provided' });
       }
@@ -118,7 +134,7 @@ const authController = {
   async updateUserPatch(req, res) {
     try {
       const { id } = req.params;
-      const allowed = ['email', 'phone', 'role', 'name', 'is_active', 'password'];
+      const allowed = ['email', 'phone', 'role', 'name', 'password'];
       const hasValid = Object.keys(req.body || {}).some(k => allowed.includes(k));
       if (!hasValid) {
         return res.status(400).json({ error: 'No valid fields provided' });

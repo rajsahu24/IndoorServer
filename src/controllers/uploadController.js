@@ -32,19 +32,18 @@ const uploadController = {
           const convertedGeometry = ShapefileService.convertToMultiPolygon(geometry);
           const metadata = { ...properties };
           delete metadata.name;
-          delete metadata.category;
           delete metadata.floor_id;
 
           const query = `
-            INSERT INTO units (name, category, floor_id, metadata, geometry)
+            INSERT INTO units (name, floor_id, metadata, feature_type, geom)
             VALUES ($1, $2, $3, $4, ST_GeomFromGeoJSON($5))
           `;
 
           await client.query(query, [
             properties.name || 'Unnamed',
-            properties.category || null,
             properties.floor_id || null,
             JSON.stringify(metadata),
+            properties.feature_type || 'unit',
             JSON.stringify(convertedGeometry)
           ]);
 
@@ -195,21 +194,25 @@ async uploadPois(req, res) {
         delete otherProps.floor_id;
         delete otherProps.building_id;
         delete otherProps.id;
+        delete otherProps.capacity;
+        delete otherProps.status;
         delete otherProps.metadata;
 
         // Merge other properties into metadata
         metadata = { ...metadata, ...otherProps };
 
         const query = `
-          INSERT INTO pois (name, category, floor_id, building_id, metadata, geom)
-          VALUES ($1, $2, $3, $4, $5::jsonb, ST_GeomFromGeoJSON($6))
+          INSERT INTO pois (name, category, floor_id, building_id, capacity, status, metadata, geom)
+          VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, ST_GeomFromGeoJSON($8))
         `;
 
         await client.query(query, [
-          properties.name || 'Unnamed',
+          properties.name || 'room',
           properties.category || null,
           properties.floor_id || null,
           properties.building_id || null,
+          properties.capacity || null,
+          properties.status || null,
           metadata,
           JSON.stringify(geometry)
         ]);

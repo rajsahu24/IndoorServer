@@ -12,7 +12,37 @@ class Event {
     return result.rows[0];
   }
 
+  static async findAll() {
+    const query = `
+      SELECT *
+      FROM events
+      ORDER BY created_at ASC
+    `;
+    const result = await pool.query(query);
+    return result.rows;
+  }
 
+  static async delete(event_id) {
+    const query = `
+      DELETE FROM events
+      WHERE id = $1
+      RETURNING *
+    `;
+    const result = await pool.query(query, [event_id]);
+    return result.rows[0];
+  }
+
+  static async update(event_id, data) {
+    const { name, event_type, venue_id, start_time, end_time, description, metadata } = data;
+    const query = `
+      UPDATE events
+      SET name = $1, event_type = $2, venue_id = $3, start_time = $4, end_time = $5, description = $6, metadata = $7
+      WHERE id = $8
+      RETURNING *
+    `;
+    const result = await pool.query(query, [name, event_type, venue_id, start_time, end_time, description, metadata, event_id]);
+    return result.rows[0];
+  }
 
   static async assignGuests(event_id, guest_ids) {
     const client = await pool.connect();
@@ -39,6 +69,15 @@ class Event {
     } finally {
       client.release();
     }
+  }
+
+  static async getById(event_id) {
+    const query = `
+      SELECT *  FROM events
+      WHERE id = $1
+    `;
+    const result = await pool.query(query, [event_id]);
+    return result.rows[0];
   }
 
   static async getEventWithVenue(event_id) {

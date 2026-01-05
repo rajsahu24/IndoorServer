@@ -15,9 +15,11 @@ class POI {
 
   static async findAll() {
     const query = `
-      SELECT id, name, category, floor_id, building_id, metadata,
-             ST_AsGeoJSON(geom) as geometry, created_at, updated_at
-      FROM pois ORDER BY created_at DESC
+      SELECT p.id, p.name, p.category, f.name as floor_name, p.building_id, p.metadata,
+             ST_AsGeoJSON(p.geom) as geometry, p.created_at, p.updated_at
+      FROM pois as p
+      INNER JOIN floors as f on p.floor_id = f.id
+      ORDER BY p.created_at DESC
     `;
     const result = await pool.query(query);
     return result.rows;
@@ -25,15 +27,18 @@ class POI {
 
   static async findById(id) {
     const query = `
-      SELECT id, name, category, floor_id, building_id, metadata,
-             ST_AsGeoJSON(geom) as geometry, created_at, updated_at
-      FROM pois WHERE id = $1
+      SELECT p.id, p.name, p.category, f.name as floor_name, p.building_id, p.metadata,
+             ST_AsGeoJSON(p.geom) as geometry, p.created_at, p.updated_at
+      FROM pois as p
+      INNER JOIN floors as f on p.floor_id = f.id
+      WHERE p.id = $1
     `;
     const result = await pool.query(query, [id]);
     return result.rows[0];
   }
 
   static async update(id, data) {
+    console.log(data);
     const { name, category, floor_id, building_id, metadata } = data.properties;
     const geom = data.geometry;
     const query = `

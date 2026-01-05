@@ -9,19 +9,14 @@ const unitController = {
         properties: {
           id: unit.id,
           name: unit.name,
-          category: unit.category,
-          feature_type: 'unit',
+          feature_type: unit.feature_type,
           floor_id: unit.floor_id,
-          area: unit.area,
+          building_id: unit.building_id,
           metadata: unit.metadata,
-          show: unit.show,
-          display_point: unit.display_point,
-          accessibility: unit.accessibility,
-          restriction: unit.restriction,
           created_at: unit.created_at,
           updated_at: unit.updated_at
         },
-        geometry: JSON.parse(unit.geometry)
+        geom: JSON.parse(unit.geometry)
       });
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -38,19 +33,14 @@ const unitController = {
           properties: {
             id: unit.id,
             name: unit.name,
-            category: unit.category,
-            feature_type: 'unit',
+            feature_type: unit.feature_type,
             floor_id: unit.floor_id,
-            area: unit.area,
+            building_id: unit.building_id,
             metadata: unit.metadata,
-            show: unit.show,
-            display_point: unit.display_point,
-            accessibility: unit.accessibility,
-            restriction: unit.restriction,
             created_at: unit.created_at,
             updated_at: unit.updated_at
           },
-          geometry: JSON.parse(unit.geometry)
+          geom: JSON.parse(unit.geometry)
         }))
       };
       res.json(geojson);
@@ -70,19 +60,14 @@ const unitController = {
         properties: {
           id: unit.id,
           name: unit.name,
-          category: unit.category,
-          feature_type: 'unit',
+          feature_type: unit.feature_type,
           floor_id: unit.floor_id,
-          area: unit.area,
+          building_id: unit.building_id,
           metadata: unit.metadata,
-          show: unit.show,
-          display_point: unit.display_point,
-          accessibility: unit.accessibility,
-          restriction: unit.restriction,
           created_at: unit.created_at,
           updated_at: unit.updated_at
         },
-        geometry: JSON.parse(unit.geometry)
+        geom: JSON.parse(unit.geometry)
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -100,19 +85,14 @@ const unitController = {
         properties: {
           id: unit.id,
           name: unit.name,
-          category: unit.category,
-          feature_type: 'unit',
+          feature_type: unit.feature_type,
           floor_id: unit.floor_id,
-          area: unit.area,
+          building_id: unit.building_id,
           metadata: unit.metadata,
-          show: unit.show,
-          display_point: unit.display_point,
-          accessibility: unit.accessibility,
-          restriction: unit.restriction,
           created_at: unit.created_at,
           updated_at: unit.updated_at
         },
-        geometry: JSON.parse(unit.geometry)
+        geom: JSON.parse(unit.geometry)
       });
     } catch (error) {
       res.status(400).json({ error: error.message });

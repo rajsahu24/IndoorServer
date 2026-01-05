@@ -8,19 +8,19 @@ class RoomAllocation {
     const {
       booking_id,
       guest_id,
-      room_id,
+      poi_id,
       check_in_date,
       check_out_date,
-      status = 'allocated'
+      status = 1
     } = data;
 
-    if (!booking_id || !guest_id || !room_id || !check_in_date || !check_out_date) {
-      throw new Error('booking_id, guest_id, room_id, check_in_date and check_out_date are required');
+    if (!booking_id || !guest_id || !poi_id || !check_in_date || !check_out_date) {
+      throw new Error('booking_id, guest_id, poi_id, check_in_date and check_out_date are required');
     }
 
     const query = `
       INSERT INTO room_allocations
-        (booking_id, guest_id, room_id, check_in_date, check_out_date, status)
+        (booking_id, guest_id, poi_id, check_in_date, check_out_date, status)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
@@ -28,7 +28,7 @@ class RoomAllocation {
     const result = await pool.query(query, [
       booking_id,
       guest_id,
-      room_id,
+      poi_id,
       check_in_date,
       check_out_date,
       status
@@ -42,12 +42,12 @@ class RoomAllocation {
    */
   static async findAll() {
     const query = `
-      SELECT ra.*,
-             r.room_number,
+      SELECT 
+             r.name AS room_name,
              g.name AS guest_name,
-             b.client_name AS booking_client
+             b.host_name AS client_name
       FROM room_allocations ra
-      JOIN rooms r ON ra.room_id = r.id
+      JOIN pois r ON ra.poi_id = r.id
       JOIN guests g ON ra.guest_id = g.id
       JOIN bookings b ON ra.booking_id = b.id
       ORDER BY ra.created_at DESC
@@ -62,12 +62,12 @@ class RoomAllocation {
    */
   static async findById(id) {
     const query = `
-      SELECT ra.*,
-             r.room_number,
+      SELECT 
+             r.name AS poi_name,
              g.name AS guest_name,
-             b.client_name AS booking_client
+             b.host_name AS booking_client
       FROM room_allocations ra
-      JOIN rooms r ON ra.room_id = r.id
+      JOIN pois r ON ra.poi_id = r.id
       JOIN guests g ON ra.guest_id = g.id
       JOIN bookings b ON ra.booking_id = b.id
       WHERE ra.id = $1
@@ -81,11 +81,14 @@ class RoomAllocation {
    * Update allocation
    */
   static async update(id, data) {
-    const { check_in_date, check_out_date, status } = data;
+    const { check_in_date, check_out_date, status, booking_id, guest_id, poi_id } = data;
 
     const query = `
       UPDATE room_allocations
       SET
+        booking_id = COALESCE($5, booking_id),
+        guest_id = COALESCE($6, guest_id),
+        poi_id = COALESCE($7, poi_id),
         check_in_date = COALESCE($2, check_in_date),
         check_out_date = COALESCE($3, check_out_date),
         status = COALESCE($4, status),
@@ -96,9 +99,13 @@ class RoomAllocation {
 
     const result = await pool.query(query, [
       id,
+      
       check_in_date,
       check_out_date,
-      status
+      status,
+      booking_id,
+      guest_id,
+      poi_id
     ]);
 
     return result.rows[0];

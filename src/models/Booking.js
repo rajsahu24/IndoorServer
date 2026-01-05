@@ -2,13 +2,35 @@ const pool = require('../database');
 
 class Booking {
   static async create(data) {
-    const { hotel_id, booking_type, client_name, client_contact, start_date, end_date, guest_count, metadata } = data;
+    const {
+      building_id,
+      booking_category,
+      host_id,
+      host_name,
+      host_email,
+      host_phone,
+      host_metadata = {},
+      start_date,
+      end_date,
+      guest_count,
+      status = 'confirmed',
+      metadata = {}
+    } = data;
+
     const query = `
-      INSERT INTO bookings (hotel_id, booking_type, client_name, client_contact, start_date, end_date, guest_count, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO bookings (
+        building_id, booking_category, host_id, host_name, host_email, host_phone,
+        host_metadata, start_date, end_date, guest_count, status, metadata
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
-    const result = await pool.query(query, [hotel_id, booking_type, client_name, client_contact, start_date, end_date, guest_count, metadata]);
+
+    const result = await pool.query(query, [
+      building_id, booking_category, host_id, host_name, host_email, host_phone,
+      JSON.stringify(host_metadata), start_date, end_date, guest_count, status,
+      JSON.stringify(metadata)
+    ]);
     return result.rows[0];
   }
 
@@ -16,9 +38,9 @@ class Booking {
 
   static async findAll() {
     const query = `
-      SELECT b.*, h.name as hotel_name
+      SELECT b.*, bd.name as building_name
       FROM bookings b
-      JOIN hotels h ON b.hotel_id = h.id
+      LEFT JOIN buildings bd ON b.building_id = bd.id
       ORDER BY b.created_at DESC
     `;
     const result = await pool.query(query);
@@ -30,9 +52,9 @@ class Booking {
   
   static async findById(id) {
     const query = `
-      SELECT b.*, h.name as hotel_name
+      SELECT b.*, bd.name as building_name
       FROM bookings b
-      JOIN hotels h ON b.hotel_id = h.id
+      LEFT JOIN buildings bd ON b.building_id = bd.id
       WHERE b.id = $1
     `;
     const result = await pool.query(query, [id]);
@@ -69,9 +91,13 @@ class Booking {
 
   static async update(id, data) {
     const {
-      booking_type,
-      client_name,
-      client_contact,
+      building_id,
+      booking_category,
+      host_id,
+      host_name,
+      host_email,
+      host_phone,
+      host_metadata,
       start_date,
       end_date,
       guest_count,
@@ -82,14 +108,18 @@ class Booking {
     const query = `
       UPDATE bookings
       SET
-        booking_type = COALESCE($2, booking_type),
-        client_name = COALESCE($3, client_name),
-        client_contact = COALESCE($4, client_contact),
-        start_date = COALESCE($5, start_date),
-        end_date = COALESCE($6, end_date),
-        guest_count = COALESCE($7, guest_count),
-        status = COALESCE($8, status),
-        metadata = COALESCE($9, metadata),
+        building_id = COALESCE($2, building_id),
+        booking_category = COALESCE($3, booking_category),
+        host_id = COALESCE($4, host_id),
+        host_name = COALESCE($5, host_name),
+        host_email = COALESCE($6, host_email),
+        host_phone = COALESCE($7, host_phone),
+        host_metadata = COALESCE($8, host_metadata),
+        start_date = COALESCE($9, start_date),
+        end_date = COALESCE($10, end_date),
+        guest_count = COALESCE($11, guest_count),
+        status = COALESCE($12, status),
+        metadata = COALESCE($13, metadata),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING *
@@ -97,14 +127,18 @@ class Booking {
 
     const result = await pool.query(query, [
       id,
-      booking_type,
-      client_name,
-      client_contact,
+      building_id,
+      booking_category,
+      host_id,
+      host_name,
+      host_email,
+      host_phone,
+      host_metadata ? JSON.stringify(host_metadata) : null,
       start_date,
       end_date,
       guest_count,
       status,
-      metadata
+      metadata ? JSON.stringify(metadata) : null
     ]);
 
     return result.rows[0];
