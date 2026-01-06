@@ -1,125 +1,72 @@
 const pool = require('../database');
+const bcrypt = require('bcrypt');
 
-class Venue {
-  /**
-   * Create venue
-   */
-  static async create(data) {
-    const {
-      name,
-      unit_id,
-      metadata = {},
-      status
-    } = data;
-
-    if (!name || !unit_id) {
-      throw new Error('name and unit_id are required');
-    }
-
-    const query = `
-      INSERT INTO venues (
-        name,
-        unit_id,
-        metadata,
-        status
-      )
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [
-      name,
-      unit_id,
-      metadata,
-      status
-    ]);
-
+class User {
+  static async create(userData) {
+    const { email, password, phone, role = 'guest', name } = userData;
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+      'INSERT INTO users (email,phone, password_hash, role, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, phone, role, name, created_at',
+      [email, phone, passwordHash, role, name]
+    );
     return result.rows[0];
   }
 
-  /**
-   * Get all venues
-   */
-  static async findAll() {
-    const query = `
-      SELECT 
-        v.*,
-        f.floor_number,
-        f.name AS floor_name
-      FROM venues v
-      JOIN floors f ON v.floor_id = f.id
-      ORDER BY v.created_at DESC
-    `;
+  static async findByEmail(email) {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    return result.rows[0];
+  }
 
-    const result = await pool.query(query);
+  static async findById(id) {
+    const result = await pool.query('SELECT id, email, phone, role, name,  created_at FROM users WHERE id = $1', [id]);
+    return result.rows[0];
+  }
+
+  static async verifyPassword(password, hash) {
+    return bcrypt.compare(password, hash);
+  }
+
+  static async updateRole(id, role) {
+    const result = await pool.query(
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, phone, role, name, created_at',
+      [role, id]
+    );
+    return result.rows[0];
+  }
+
+  static async getAll() {
+    const result = await pool.query('SELECT id, email, phone, role, name,  created_at FROM users ORDER BY created_at DESC');
     return result.rows;
   }
 
-  /**
-   * Get venue by ID
-   */
-  static async findById(id) {
-    const query = `
-      SELECT 
-        v.*,
-        f.floor_number,
-        f.name AS floor_name
-      FROM venues v
-      JOIN floors f ON v.floor_id = f.id
-      WHERE v.id = $1
-    `;
-
-    const result = await pool.query(query, [id]);
-    return result.rows[0];
-  }
-
-  /**
-   * Update venue
-   */
   static async update(id, data) {
-    const {
-      name,
-      venue_type,
-      capacity,
-      amenities
-    } = data;
+    const allowed = ['email', 'phone', 'role', 'name', 'password','building_id', 'unit_id', 'booking_id',   'metadata'];
+    const entries = Object.entries(data || {}).filter(([k]) => allowed.includes(k));
+    if (entries.length === 0) {
+      return null;
+    }
 
-    const query = `
-      UPDATE venues
-      SET
-        name = COALESCE($2, name),
-        venue_type = COALESCE($3, venue_type),
-        capacity = COALESCE($4, capacity),
-        amenities = COALESCE($5, amenities),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING *
-    `;
+    const sets = [];
+    const values = [];
+    let idx = 1;
 
-    const result = await pool.query(query, [
-      id,
-      name,
-      venue_type,
-      capacity,
-      amenities
-    ]);
+    for (const [key, value] of entries) {
+      if (key === 'password') {
+        const hash = await bcrypt.hash(value, 10);
+        sets.push(`password_hash = $${idx++}`);
+        values.push(hash);
+      } else {
+        sets.push(`${key} = $${idx++}`);
+        values.push(value);
+      }
+    }
+    values.push(id);
 
-    return result.rows[0];
-  }
-
-  /**
-   * Delete venue
-   */
-  static async delete(id) {
-    const query = `
-      DELETE FROM venues
-      WHERE id = $1
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [id]);
-    return result.rows[0];
+    const query = `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, email, phone, role, name,   created_at`;
+    const result = await pool.query(query, values);
+    return result.rows[0] || null;
   }
 }
 
-module.exports = Venue;
+module.exports = User;
