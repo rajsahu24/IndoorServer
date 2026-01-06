@@ -10,14 +10,15 @@ class Guest {
       phone,
       email,
       guest_type,
+      booking_id,
       status,
       metadata = {}
     } = data;
 
     const query = `
       INSERT INTO guests
-        (name, phone, email, guest_type, status, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6)
+        (name, phone, email, guest_type, booking_id, status, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
@@ -26,6 +27,7 @@ class Guest {
       phone,
       email,
       guest_type,
+      booking_id,
       status,
       metadata
     ]);
@@ -76,7 +78,7 @@ class Guest {
    * Update guest
    */
   static async update(id, data) {
-    const { name, phone, email, guest_type, status, metadata } = data;
+    const { name, phone, email, guest_type, booking_id, status, metadata } = data;
 
     const query = `
       UPDATE guests
@@ -85,8 +87,9 @@ class Guest {
         phone = COALESCE($3, phone),
         email = COALESCE($4, email),
         guest_type = COALESCE($5, guest_type),
-        status = COALESCE($6, status),
-        metadata = COALESCE($7, metadata),
+        booking_id = COALESCE($6, booking_id),
+        status = COALESCE($7, status),
+        metadata = COALESCE($8, metadata),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING *
@@ -98,6 +101,7 @@ class Guest {
       phone,
       email,
       guest_type,
+      booking_id,
       status,
       metadata
     ]);
@@ -122,7 +126,7 @@ class Guest {
   /**
    * Bulk create guests from file data
    */
-  static async bulkCreate(guestsData) {
+  static async bulkCreate(guestsData, booking_id) {
     const client = await pool.connect();
     const results = { successful: [], failed: [] };
 
@@ -131,19 +135,19 @@ class Guest {
 
       for (const guestData of guestsData) {
         try {
-          const { name, phone, email, guest_type, metadata = {} } = guestData;
+          const { name, phone, email, guest_type,  metadata = {} } = guestData;
           
           if (!name) {
             throw new Error('Name is required');
           }
 
           const query = `
-            INSERT INTO guests (name, phone, email, guest_type,  metadata)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO guests (name, phone, email, guest_type, booking_id, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
           `;
 
-          const result = await client.query(query, [name, phone, email, guest_type, metadata]);
+          const result = await client.query(query, [name, phone, email, guest_type, booking_id, metadata]);
           results.successful.push(result.rows[0]);
         } catch (error) {
           results.failed.push({ data: guestData, error: error.message });

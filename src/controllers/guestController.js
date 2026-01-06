@@ -168,7 +168,7 @@ const guestController = {
           // Create guest with room assignment
           const createdGuest = await Guest.create({
             booking_id,
-            unit_id: assignedRoom.id, // Assuming Guest model has a unit_id field
+            poi_id: assignedRoom.id, // Assuming Guest model has a poi_id field
             name: guest.name,
             phone: guest.phone || null,
             email: guest.email || null,
@@ -230,7 +230,7 @@ const guestController = {
       if (!req.file) {
         return res.status(400).json({ error: 'File is required' });
       }
-
+      const booking_id = req.body.booking_id
       const filePath = req.file.path;
       const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
 
@@ -247,7 +247,7 @@ const guestController = {
       }
 
       // Bulk create guests
-      const results = await Guest.bulkCreate(guestData);
+      const results = await Guest.bulkCreate(guestData, booking_id);
 
       // Clean up uploaded file
       fs.unlinkSync(filePath);
