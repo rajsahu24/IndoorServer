@@ -1,163 +1,305 @@
+const Guest = require('../models/Guest');
+const Room = require('../models/Room');
 const pool = require('../database');
+const multer = require('multer');
+const csv = require('csv-parser');
+const XLSX = require('xlsx');
+const fs = require('fs');
 
-class Guest {
-  /**
-   * Create guest
-   */
-  static async create(data) {
-    const {
-      name,
-      phone,
-      email,
-      status,
-      metadata = {}
-    } = data;
+// Configure multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
-
-    const query = `
-      INSERT INTO guests
-        (  name, phone, email, status, metadata)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [
-
-      name,
-      phone,
-      email,
-      status,
-      metadata
-    ]);
-
-    return result.rows[0];
-  }
-
-  static async findAll() {
-    const query = `
-      SELECT *
-      FROM guests
-      ORDER BY created_at ASC
-    `;  
-    const result = await pool.query(query);
-    return result.rows;
-  }
-
-  /**
-   * Get guests by booking
-   */
-  static async findByBooking(booking_id) {
-    const query = `
-      SELECT *
-      FROM guests
-      WHERE booking_id = $1
-      ORDER BY created_at ASC
-    `;
-
-    const result = await pool.query(query, [booking_id]);
-    return result.rows;
-  }
-
-  /**
-   * Get guest by ID
-   */
-  static async findById(id) {
-    const query = `
-      SELECT *
-      FROM guests
-      WHERE id = $1
-    `;
-
-    const result = await pool.query(query, [id]);
-    return result.rows[0];
-  }
-
-  /**
-   * Update guest
-   */
-  static async update(id, data) {
-    const { name, phone, email, status, metadata } = data;
-
-    const query = `
-      UPDATE guests
-      SET
-        name = COALESCE($2, name),
-        phone = COALESCE($3, phone),
-        email = COALESCE($4, email),
-        status = COALESCE($5, status),
-        metadata = COALESCE($6, metadata),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [
-      id,
-      name,
-      phone,
-      email,
-      status,
-      metadata
-    ]);
-
-    return result.rows[0];
-  }
-
-  /**
-   * Delete guest
-   */
-  static async delete(id) {
-    const query = `
-      DELETE FROM guests
-      WHERE id = $1
-      RETURNING *
-    `;
-
-    const result = await pool.query(query, [id]);
-    return result.rows[0];
-  }
-
-  /**
-   * Bulk create guests from file data
-   */
-  static async bulkCreate(guestsData) {
-    const client = await pool.connect();
-    const results = { successful: [], failed: [] };
-
+const guestController = {
+  async create(req, res) {
     try {
-      await client.query('BEGIN');
+      const guest = await Guest.create(req.body);
+      res.status(201).json(guest);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+  async getAll(req, res) {
+    try {
+      const guests = await Guest.findAll();
+      res.json(guests);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 
-      for (const guestData of guestsData) {
+  async getByBooking(req, res) {
+    try {
+      const { booking_id } = req.params;
+      const guests = await Guest.findByBooking(booking_id);
+      res.json(guests);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  async getById(req, res) {
+    try {
+      const guest = await Guest.findById(req.params.id);
+
+      if (!guest) {
+        return res.status(404).json({ error: 'Guest not found' });
+      }
+
+      res.json(guest);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  async update(req, res) {
+    try {
+      const updatedGuest = await Guest.update(
+        req.params.id,
+        req.body
+      );
+
+      if (!updatedGuest) {
+        return res.status(404).json({ error: 'Guest not found' });
+      }
+
+      res.json(updatedGuest);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+
+  async delete(req, res) {
+    try {
+      const deletedGuest = await Guest.delete(req.params.id);
+
+      if (!deletedGuest) {
+        return res.status(404).json({ error: 'Guest not found' });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'Guest deleted successfully',
+        guest: deletedGuest
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Bulk guest booking with file upload
+  async bulkBooking(req, res) {
+    try {
+      const { booking_id, check_in_date, check_out_date } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'File is required' });
+      }
+
+      if (!booking_id || !check_in_date || !check_out_date) {
+        return res.status(400).json({ error: 'booking_id, check_in_date, and check_out_date are required' });
+      }
+
+      const filePath = req.file.path;
+      const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
+
+      let guestData = [];
+
+      // Parse file based on extension
+      if (fileExtension === 'csv') {
+        guestData = await parseCSV(filePath);
+      } else if (['xlsx', 'xls'].includes(fileExtension)) {
+        guestData = await parseExcel(filePath);
+      } else {
+        return res.status(400).json({ error: 'Only CSV and Excel files are supported' });
+      }
+
+      // Get available rooms with their capacities
+      // Assuming getAvailableRooms() returns an array like [{ id: 1, room_number: '101', capacity: 2, status: 'available' }, ...]
+      // and filters for the given check_in_date and check_out_date internally if needed
+      const availableRooms = await getAvailableRooms();
+
+      if (availableRooms.length === 0) {
+        return res.status(400).json({ error: 'No rooms available for the specified dates' });
+      }
+
+      // Track remaining capacity for each room (initialize with room's max capacity)
+      // We strictly iterate through availableRooms in order to fill them sequentially
+      availableRooms.forEach(room => {
+        room.remainingCapacity = room.metadata.capacity || 1; // Default to 1 if capacity not set
+      });
+
+      // Calculate total available slots across all rooms
+      const totalAvailableSlots = availableRooms.reduce((sum, room) => sum + room.remainingCapacity, 0);
+
+      if (totalAvailableSlots < guestData.length) {
+        fs.unlinkSync(filePath); // Clean up early on error
+        return res.status(400).json({
+          error: `Not enough capacity available. Need ${guestData.length} slots, but only ${totalAvailableSlots} available`
+        });
+      }
+
+      const results = {
+        successful: [],
+        failed: [],
+        total: guestData.length
+      };
+
+      let currentRoomIndex = 0;
+
+      // Process each guest
+      for (let i = 0; i < guestData.length; i++) {
+        const guest = guestData[i];
+
         try {
-          const { name, phone, email, metadata = {} } = guestData;
-          
-          if (!name) {
-            throw new Error('Name is required');
+          // Find the next room with remaining capacity
+          // Since we already checked total capacity, we assume we will find a room
+          while (currentRoomIndex < availableRooms.length && availableRooms[currentRoomIndex].remainingCapacity <= 0) {
+            currentRoomIndex++;
           }
 
-          const query = `
-            INSERT INTO guests (name, phone, email, metadata)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-          `;
+          if (currentRoomIndex >= availableRooms.length) {
+            // Should not be reached given the total check, but essentially means "Full"
+            throw new Error('Unexpected error: No room with available capacity found despite pre-check');
+          }
 
-          const result = await client.query(query, [name, phone, email, metadata]);
-          results.successful.push(result.rows[0]);
+          const assignedRoom = availableRooms[currentRoomIndex];
+
+          //  console.log('Assigning guest to room:', assignedRoom);
+          // Create guest with room assignment
+          const createdGuest = await Guest.create({
+            booking_id,
+            poi_id: assignedRoom.id, // Assuming Guest model has a poi_id field
+            name: guest.name,
+            phone: guest.phone || null,
+            email: guest.email || null,
+            check_in_date, // Add dates to guest if needed
+            check_out_date,
+            metadata: guest.metadata || {}
+          });
+
+          // Decrement remaining capacity for the assigned room
+          assignedRoom.remainingCapacity -= 1;
+
+          // Push success with details
+          results.successful.push({
+            guest: {
+              id: createdGuest.id,
+              name: createdGuest.name,
+              room_id: assignedRoom.id,
+              room_number: assignedRoom.room_number || assignedRoom.id // Assuming room has room_number
+            }
+          });
+
         } catch (error) {
-          results.failed.push({ data: guestData, error: error.message });
+          results.failed.push({
+            guest,
+            error: error.message
+          });
         }
       }
 
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+      // Optionally, update room occupancies in the database
+      // For example, if you have a Room model, update current_occupancy or booked_slots
+      // await updateRoomOccupancies(roomCapacities, check_in_date, check_out_date);
 
-    return results;
+      // Clean up uploaded file
+      fs.unlinkSync(filePath);
+
+      res.status(201).json({
+        status: 'completed',
+        results,
+        summary: {
+          totalAvailableSlots: totalAvailableSlots,
+          usedSlots: results.successful.length,
+          remainingSlots: totalAvailableSlots - results.successful.length
+        }
+      });
+
+    } catch (error) {
+      // Ensure file cleanup on outer error
+      if (req.file && req.file.path) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: error.message }); // Changed to 500 for server errors
+    }
+  },
+
+  // Simple bulk guest upload without room allocation
+  async uploadGuests(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'File is required' });
+      }
+
+      const filePath = req.file.path;
+      const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
+
+      let guestData = [];
+
+      // Parse file based on extension
+      if (fileExtension === 'csv') {
+        guestData = await parseCSV(filePath);
+      } else if (['xlsx', 'xls'].includes(fileExtension)) {
+        guestData = await parseExcel(filePath);
+      } else {
+        fs.unlinkSync(filePath);
+        return res.status(400).json({ error: 'Only CSV and Excel files are supported' });
+      }
+
+      // Bulk create guests
+      const results = await Guest.bulkCreate(guestData);
+
+      // Clean up uploaded file
+      fs.unlinkSync(filePath);
+
+      res.status(201).json({
+        status: 'completed',
+        total: guestData.length,
+        successful: results.successful.length,
+        failed: results.failed.length,
+        results
+      });
+
+    } catch (error) {
+      if (req.file && req.file.path) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: error.message });
+    }
   }
+};
+
+// Helper function to parse CSV
+function parseCSV(filePath) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', reject);
+  });
 }
 
-module.exports = Guest;
+// Helper function to parse Excel
+function parseExcel(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  return XLSX.utils.sheet_to_json(worksheet);
+}
+
+// Helper function to get available rooms
+async function 
+getAvailableRooms() {
+  const query = `
+    SELECT r.*
+    FROM pois r
+    WHERE (r->>'status')::int = 0
+  `;
+
+  const result = await pool.query(query);
+  return result.rows;
+}
+
+module.exports = { guestController, upload };

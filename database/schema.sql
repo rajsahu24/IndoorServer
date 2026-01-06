@@ -143,7 +143,7 @@ CREATE TABLE venues (
 -- Bookings table
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    floors_id 
+    
     booking_category VARCHAR(50) NOT NULL,
     host_id VARCHAR(100)
     host_name VARCHAR(255) NOT NULL,

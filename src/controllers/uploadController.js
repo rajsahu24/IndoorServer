@@ -1,9 +1,18 @@
 const pool = require('../database');
 const ShapefileService = require('../services/shapefileService');
+const TriggerService = require('../services/triggerService');
 
 const uploadController = {
+  // Initialize triggers on first use
+  async initializeTriggers() {
+    try {
+      await TriggerService.initializeTriggers();
+    } catch (error) {
+      console.error('Failed to initialize triggers:', error);
+    }
+  },
   async uploadUnits(req, res) {
-    console.log('Received file: aslifjalsjflsajfd');
+   
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
@@ -137,6 +146,9 @@ const uploadController = {
   },
 
 async uploadPois(req, res) {
+  // Initialize triggers if not already done
+  await uploadController.initializeTriggers();
+  
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }

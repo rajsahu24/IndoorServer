@@ -1,7 +1,18 @@
 const POI = require('../models/POI');
+const TriggerService = require('../services/triggerService');
 
 const poiController = {
+  // Initialize triggers on first use
+  async initializeTriggers() {
+    try {
+      await TriggerService.initializeTriggers();
+    } catch (error) {
+      console.error('Failed to initialize triggers:', error);
+    }
+  },
+
   async create(req, res) {
+    await poiController.initializeTriggers();
     try {
       const poi = await POI.create(req.body);
       res.status(201).json({
@@ -34,7 +45,7 @@ const poiController = {
             id: poi.id,
             name: poi.name,
             category: poi.category,
-            floor_id: poi.floor_id,
+            floor_name: poi.floor_name,
             building_id: poi.building_id,
             metadata: poi.metadata,
             created_at: poi.created_at,
@@ -61,7 +72,7 @@ const poiController = {
           id: poi.id,
           name: poi.name,
           category: poi.category,
-          floor_id: poi.floor_id,
+          floor_name: poi.floor_name,
           building_id: poi.building_id,
           metadata: poi.metadata,
           created_at: poi.created_at,
@@ -75,7 +86,9 @@ const poiController = {
   },
 
   async update(req, res) {
+    await poiController.initializeTriggers();
     try {
+      
       const poi = await POI.update(req.params.id, req.body);
       if (!poi) {
         return res.status(404).json({ error: 'POI not found' });
