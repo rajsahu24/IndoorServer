@@ -7,37 +7,31 @@ class Venue {
   static async create(data) {
     const {
       name,
-      floor_id,
-      unit_id,
-      venue_type,
-      capacity,
-      amenities = {}
+      poi_id,
+      metadata = {},
+      status
     } = data;
 
-    if (!name || !floor_id || !unit_id) {
-      throw new Error('name, floor_id, and unit_id are required');
+    if (!name || !poi_id) {
+      throw new Error('name and poi_id are required');
     }
 
     const query = `
       INSERT INTO venues (
         name,
-        floor_id,
-        unit_id,
-        venue_type,
-        capacity,
-        amenities
+        poi_id,
+        metadata,
+        status
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
     const result = await pool.query(query, [
       name,
-      floor_id,
-      unit_id,
-      venue_type,
-      capacity,
-      amenities
+      poi_id,
+      metadata,
+      status
     ]);
 
     return result.rows[0];
@@ -49,11 +43,9 @@ class Venue {
   static async findAll() {
     const query = `
       SELECT 
-        v.*,
-        f.floor_number,
-        f.name AS floor_name
+        v.*
       FROM venues v
-      JOIN floors f ON v.floor_id = f.id
+      
       ORDER BY v.created_at DESC
     `;
 
@@ -67,11 +59,8 @@ class Venue {
   static async findById(id) {
     const query = `
       SELECT 
-        v.*,
-        f.floor_number,
-        f.name AS floor_name
+        v.*
       FROM venues v
-      JOIN floors f ON v.floor_id = f.id
       WHERE v.id = $1
     `;
 
@@ -87,16 +76,17 @@ class Venue {
       name,
       venue_type,
       capacity,
-      amenities
+      metadata,
     } = data;
 
     const query = `
       UPDATE venues
       SET
         name = COALESCE($2, name),
-        venue_type = COALESCE($3, venue_type),
-        capacity = COALESCE($4, capacity),
-        amenities = COALESCE($5, amenities),
+        poi_id = COALESCE($3, poi_id),
+        venue_type = COALESCE($4, venue_type),
+        capacity = COALESCE($5, capacity),
+        metadata = COALESCE($6  , metadata),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING *
