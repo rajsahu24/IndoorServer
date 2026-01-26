@@ -6,20 +6,21 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE units (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL, 
-    -- category VARCHAR(100),
     feature_type VARCHAR(20) DEFAULT 'unit' CHECK (feature_type = 'unit'), 
     floor_id UUID NOT NULL REFERENCES floors(id), 
     building_id VARCHAR(100),
-    -- area DECIMAL GENERATED ALWAYS AS (ST_Area(geometry::geography)) STORED,  
     metadata JSONB DEFAULT '{}', 
+    geom GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+     -- category VARCHAR(100),
+    -- area DECIMAL GENERATED ALWAYS AS (ST_Area(geometry::geography)) STORED,  
     -- show BOOLEAN DEFAULT true, 
     -- unit_type VARCHAR(255), 
     -- display_point BOOLEAN DEFAULT true, 
     -- accessibility BOOLEAN DEFAULT false, 
     -- restriction BOOLEAN DEFAULT false, 
-    geom GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+
 );
 
 -- Routes table (walkable paths) 
@@ -44,7 +45,9 @@ CREATE TABLE pois (
     category VARCHAR(50),
     floor_id UUID  REFERENCES floors(id),
     metadata JSONB DEFAULT '{}',
-    building_id UUID REFERENCES bookings(id)
+    building_id UUID REFERENCES bookings(id),
+    capacity INT DEFAULT 0,
+    status int DEFAULT 0,
     -- floor_name VARCHAR(100),
     geom GEOMETRY(POINT, 4326) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -114,13 +117,12 @@ CREATE TABLE floors (
 );
 
 -- Rooms table (linked to units)
-CREATE TABLE rooms (
+CREATE TABLE room_booking (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     room_number VARCHAR(50) NOT NULL,
-    floor_id UUID NOT NULL REFERENCES floors(id),
     unit_id UUID NOT NULL REFERENCES units(id),
-    room_type VARCHAR(50),
-    capacity INTEGER,
+    -- room_type VARCHAR(50),
+    -- capacity INTEGER,
     metadata JSONB DEFAULT '{}',
     status VARCHAR(20) DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -131,11 +133,11 @@ CREATE TABLE rooms (
 CREATE TABLE venues (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    floor_id UUID NOT NULL REFERENCES floors(id),
     unit_id UUID NOT NULL REFERENCES units(id),
-    venue_type VARCHAR(50),
-    capacity INTEGER,
+    -- venue_type VARCHAR(50),
+    -- capacity INTEGER,
     metadata JSONB DEFAULT '{}',
+    status VARCHAR(20) DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -143,16 +145,21 @@ CREATE TABLE venues (
 -- Bookings table
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    
+    building_id UUID NOT NULL REFERENCES buildings(id),
     booking_category VARCHAR(50) NOT NULL,
-    host_id VARCHAR(100)
+    host_id VARCHAR(100),
     host_name VARCHAR(255) NOT NULL,
+    host_email VARCHAR(255) UNIQUE NOT NULL,
+    host_phone VARCHAR(20) ,
     host_metadata JSONB DEFAULT '{}',
+    -- events JSONB DEFAULT '[]',
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     guest_count INTEGER,
     status VARCHAR(20) DEFAULT 'confirmed',
     metadata JSONB DEFAULT '{}',
+    -- book_room JSONB DEFAULT [],
+    -- book_venue JSONB DEFAULT [],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -160,43 +167,51 @@ CREATE TABLE bookings (
 -- Guests table
 CREATE TABLE guests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID NOT NULL REFERENCES bookings(id),
+    booking_id UUID REFERENCES bookings(id),
+    invitation_id UUID REFERENCES invitations(id),
     name VARCHAR(255) NOT NULL,
+    guest_type VARCHAR(255),
     phone VARCHAR(20),
     email VARCHAR(255),
-    guest_type VARCHAR(50) DEFAULT 'guest',
     metadata JSONB DEFAULT '{}',
+    status BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
 );
 
 -- Room allocations table
-CREATE TABLE room_allocations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID NOT NULL REFERENCES bookings(id),
-    guest_id UUID NOT NULL REFERENCES guests(id),
-    room_id UUID NOT NULL REFERENCES rooms(id),
-    check_in_date DATE NOT NULL,
-    check_out_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'allocated',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    CREATE TABLE room_allocations (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        booking_id UUID NOT NULL REFERENCES bookings(id),
+        guest_id UUID NOT NULL REFERENCES guests(id),
+        poi_id UUID NOT NULL REFERENCES pois(id),
+        check_in_date DATE NOT NULL,
+        check_out_date DATE NOT NULL,
+        status BIGINT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
 -- Events table
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID NOT NULL REFERENCES bookings(id),
+    booking_id UUID REFERENCES bookings(id),
     name VARCHAR(255) NOT NULL,
-    event_type VARCHAR(50) NOT NULL,
-    venue_id UUID NOT NULL REFERENCES venues(id),
+    event_type VARCHAR(50),
+    event_location TEXT
+    invitation_id UUID REFERENCES invitations(id),
+    venue_id UUID REFERENCES venues(id),
     start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
     description TEXT,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+    
+
 
 -- Guest events table
 CREATE TABLE guest_events (
@@ -214,7 +229,6 @@ CREATE TABLE guest_devices (
     guest_id UUID NOT NULL REFERENCES guests(id),
     device_token VARCHAR(500) NOT NULL,
     device_type VARCHAR(20) NOT NULL,
-    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -254,17 +268,44 @@ CREATE TYPE user_role AS ENUM ('admin', 'host', 'guest');
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20) UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) UNIQUE,   
+    password_hash VARCHAR(255),
     role user_role NOT NULL DEFAULT 'guest',
     name VARCHAR(255) NOT NULL,
     metadata JSONB DEFAULT '{}',
     building_id UUID REFERENCES buildings(id),
     unit_id UUID REFERENCES units(id),
+    booking_id REFERENCES bookings(id),
+    google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TYPE type AS ENUM ('wedding', 'birthday');
+
+CREATE TABLE invitations(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    invitation_type type NOT NULL,
+    invitation_title VARCHAR(255),
+    invitation_message TEXT,
+    invitation_tag_line TEXT,
+    metadata JSONB DEFAULT '{}'  ,
+    quick_action JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+CREATE TABLE InvitationImage(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    public_id TEXT NOT NULL,
+    type VARCHAR(50),
+    position INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 
 
 -- Additional indexes

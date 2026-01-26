@@ -124,6 +124,142 @@ class RoomAllocation {
     const result = await pool.query(query, [id]);
     return result.rows[0];
   }
+
+  /**
+   * Get available rooms with capacity
+   */
+  static async getAvailableRooms() {
+    const query = `
+      SELECT p.id, p.name, p.capacity, p.metadata
+      FROM pois p
+      WHERE p.category = 'Room' 
+        AND p.status = 0
+        AND p.id NOT IN (
+          SELECT DISTINCT poi_id 
+          FROM room_allocations 
+          WHERE status = 1
+        )
+      ORDER BY p.capacity ASC
+    `;
+    
+    const result = await pool.query(query);
+    return result.rows;
+  }
+
+  /**
+   * Bulk allocate rooms to guests
+   */
+  static async bulkAllocate(guestIds, checkInDate, checkOutDate, booking_id) {
+    const client = await pool.connect();
+    const results = { successful: [], failed: [] };
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Get available rooms
+      const availableRoomsResult = await client.query(`
+        SELECT p.id, p.name, p.capacity, p.metadata
+        FROM pois p
+        WHERE p.category = 'Room' 
+          AND p.status = 0
+          AND p.id NOT IN (
+            SELECT DISTINCT poi_id 
+            FROM room_allocations 
+            WHERE status = 1
+          )
+        ORDER BY p.capacity ASC
+      `);
+      
+      let availableRooms = availableRoomsResult.rows;
+      
+      if (availableRooms.length === 0) {
+        throw new Error('No rooms available');
+      }
+      
+      // Get guests with their types
+      const guestQuery = `
+        SELECT id, name, guest_type
+        FROM guests 
+        WHERE id = ANY($1)
+      `;
+      const guestResult = await client.query(guestQuery, [guestIds]);
+      const guests = guestResult.rows;
+
+      // Sort guests by priority (Family > Friends > Individual)
+      const guestPriority = { 'family': 3, 'friend': 2, 'guest': 1 };
+      guests.sort((a, b) => (guestPriority[b.guest_type] || 0) - (guestPriority[a.guest_type] || 0));
+      
+      for (const guest of guests) {
+        try {
+          if (availableRooms.length === 0) {
+            throw new Error('No more rooms available');
+          }
+          
+          // Select room based on guest type
+          let selectedRoom;
+          let roomIndex;
+          
+          if (guest.guest_type === 'family') {
+            // Find largest available room
+            roomIndex = availableRooms.reduce((maxIdx, room, idx) => 
+              (room.capacity || 1) > (availableRooms[maxIdx].capacity || 1) ? idx : maxIdx, 0
+            );
+            selectedRoom = availableRooms[roomIndex];
+          } else if (guest.guest_type === 'guest') {
+            // Find smallest available room (first one since sorted by capacity ASC)
+            roomIndex = 0;
+            selectedRoom = availableRooms[0];
+          } else {
+            // Friends or default - medium capacity
+            roomIndex = Math.floor(availableRooms.length / 2);
+            selectedRoom = availableRooms[roomIndex];
+          }
+          
+          // Create allocation
+          const allocationQuery = `
+            INSERT INTO room_allocations (booking_id, guest_id, poi_id, check_in_date, check_out_date, status)
+            VALUES ($1, $2, $3, $4, $5, 1)
+            RETURNING *
+          `;
+          
+          const allocation = await client.query(allocationQuery, [
+            booking_id,
+            guest.id,
+            selectedRoom.id,
+            checkInDate,
+            checkOutDate
+          ]);
+          
+          // Update room status to unavailable
+          await client.query('UPDATE pois SET status = 1 WHERE id = $1', [selectedRoom.id]);
+          
+          // Remove room from available list
+          availableRooms.splice(roomIndex, 1);
+          
+          results.successful.push({
+            guest: guest.name,
+            room: selectedRoom.name,
+            allocation: allocation.rows[0]
+          });
+          
+        } catch (error) {
+          results.failed.push({
+            guest: guest.name,
+            error: error.message
+          });
+        }
+      }
+      
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+    return results;
+  }
 }
 
 module.exports = RoomAllocation;

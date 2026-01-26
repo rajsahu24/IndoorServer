@@ -2,13 +2,13 @@ const pool = require('../database');
 
 class Event {
   static async create(data) {
-    const { booking_id, name, event_type, venue_id, start_time, end_time, description, metadata } = data;
+    const { booking_id, invitation_id, name, event_type, venue_id,event_location, start_time, end_time, description, metadata } = data;
     const query = `
-      INSERT INTO events (booking_id, name, event_type, venue_id, start_time, end_time, description, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO events (booking_id, invitation_id, name, event_type, venue_id, event_location, start_time, end_time, description, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
-    const result = await pool.query(query, [booking_id, name, event_type, venue_id, start_time, end_time, description, metadata]);
+    const result = await pool.query(query, [booking_id, invitation_id, name, event_type, venue_id, event_location, start_time, end_time, description, metadata]);
     return result.rows[0];
   }
 
@@ -33,14 +33,14 @@ class Event {
   }
 
   static async update(event_id, data) {
-    const { name, event_type, venue_id, start_time, end_time, description, metadata } = data;
+    const { name, event_type, venue_id, start_time, end_time,event_location, description, metadata } = data;
     const query = `
       UPDATE events
-      SET name = $1, event_type = $2, venue_id = $3, start_time = $4, end_time = $5, description = $6, metadata = $7
-      WHERE id = $8
+      SET name = $1, event_type = $2, venue_id = $3, start_time = $4, end_time = $5, event_location = $6, description = $7, metadata = $8
+      WHERE id = $9
       RETURNING *
     `;
-    const result = await pool.query(query, [name, event_type, venue_id, start_time, end_time, description, metadata, event_id]);
+    const result = await pool.query(query, [name, event_type, venue_id, start_time, end_time, event_location, description, metadata, event_id]);
     return result.rows[0];
   }
 
@@ -110,6 +110,29 @@ class Event {
     const result = await pool.query(query, [guest_id]);
     return result.rows;
   }
+
+  static async findByInvitationId(invitation_id) {
+    const query = `
+      SELECT *
+      FROM events
+      WHERE booking_id = $1
+      ORDER BY start_time ASC
+    `;
+    const result = await pool.query(query, [invitation_id]);
+    return result.rows;
+  }
+
+  static async findEventByInvitationId(invitation_id) {
+    const query = `
+      SELECT *
+      FROM events
+      WHERE invitation_id = $1
+      ORDER BY start_time ASC
+    `;
+    const result = await pool.query(query, [invitation_id]);
+    return result.rows;
+  }
+
 }
 
 module.exports = Event;

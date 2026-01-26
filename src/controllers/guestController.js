@@ -5,6 +5,7 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const XLSX = require('xlsx');
 const fs = require('fs');
+const { nanoid } = require('nanoid');
 
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
@@ -12,6 +13,7 @@ const upload = multer({ dest: 'uploads/' });
 const guestController = {
   async create(req, res) {
     try {
+      
       const guest = await Guest.create(req.body);
       res.status(201).json(guest);
     } catch (error) {
@@ -227,30 +229,47 @@ const guestController = {
   // Simple bulk guest upload without room allocation
   async uploadGuests(req, res) {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'File is required' });
-      }
-      const booking_id = req.body.booking_id
-      const filePath = req.file.path;
-      const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
-
+      const booking_id = req.body.booking_id || null;
+      const invitation_id = req.body.invitation_id || null;
       let guestData = [];
+      let fileGuestData = [];
+      let arrayGuestData = [];
 
-      // Parse file based on extension
-      if (fileExtension === 'csv') {
-        guestData = await parseCSV(filePath);
-      } else if (['xlsx', 'xls'].includes(fileExtension)) {
-        guestData = await parseExcel(filePath);
-      } else {
+      // Handle file upload if present
+      if (req.file) {
+        const filePath = req.file.path;
+        const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
+        
+        if (fileExtension === 'csv') {
+          fileGuestData = await parseCSV(filePath);
+        } else if (['xlsx', 'xls'].includes(fileExtension)) {
+          fileGuestData = await parseExcel(filePath);
+        } else {
+          fs.unlinkSync(filePath);
+          return res.status(400).json({ error: 'Only CSV and Excel files are supported' });
+        }
+        
         fs.unlinkSync(filePath);
-        return res.status(400).json({ error: 'Only CSV and Excel files are supported' });
       }
 
-      // Bulk create guests
-      const results = await Guest.bulkCreate(guestData, booking_id);
+      // Handle array data if present
+      if (req.body.guests && Array.isArray(req.body.guests)) {
+        arrayGuestData = req.body.guests;
+      }
 
-      // Clean up uploaded file
-      fs.unlinkSync(filePath);
+      // Combine both sources
+      guestData = [...fileGuestData, ...arrayGuestData];
+
+      if (guestData.length === 0) {
+        return res.status(400).json({ error: 'Either file or guests array is required' });
+      }
+      
+      // Bulk create guests
+      const results = await Guest.bulkCreate(guestData.map(g => ({
+        ...g,
+        booking_id,
+        invitation_id
+      })));
 
       res.status(201).json({
         status: 'completed',

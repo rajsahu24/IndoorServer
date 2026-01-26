@@ -12,8 +12,9 @@ const auth = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ error: 'Access denied' });
     }
-    console.log("Decoded Token:", process.env.JWT_SECRET);
+    // console.log("Decoded Token:", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  
     const user = await User.findById(decoded.userId);
     
     if (!user ) {

@@ -1,18 +1,19 @@
 const User = require('../models/Users');
 const jwt = require('jsonwebtoken');
+const passport = require('../config/googleAuth');
 
 const authController = {
   async register(req, res) {
     try {
-      const { email,phone, password, role, name } = req.body;
-      
+      const { email, phone, password, role, name } = req.body;
+
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
         return res.status(400).json({ error: 'Email already exists' });
       }
 
       const user = await User.create({ email, password, phone, role, name });
-      
+
       const token = jwt.sign(
         { userId: user.id, role: user.role },
         process.env.JWT_SECRET || 'secret',
@@ -24,7 +25,7 @@ const authController = {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60 * 1000
       });
-      
+
       res.status(201).json({ user, token });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -34,9 +35,10 @@ const authController = {
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      
+
       const user = await User.findByEmail(email);
-      if (!user ) {
+      console.log(user);
+      if (!user) {
         return res.status(401).json({ error: 'Invalid email' });
       }
       console.log(user);
@@ -84,12 +86,12 @@ const authController = {
     try {
       const { id } = req.params;
       const { role } = req.body;
-      
+
       const user = await User.updateRole(id, role);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
+
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -100,11 +102,11 @@ const authController = {
     try {
       const { id } = req.params;
       const user = await User.findById(id);
-      
+
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
+
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -114,7 +116,7 @@ const authController = {
   async updateUserPut(req, res) {
     try {
       const { id } = req.params;
-      const allowed = ['email', 'phone', 'role', 'name', 'password', 'building_id', 'unit_id', 'booking_id',   'metadata'];
+      const allowed = ['email', 'phone', 'role', 'name', 'password', 'building_id', 'unit_id', 'booking_id', 'metadata'];
       const hasValid = Object.keys(req.body || {}).some(k => allowed.includes(k));
       console.log(hasValid);
       if (!hasValid) {
@@ -156,6 +158,61 @@ const authController = {
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       res.status(500).json({ error: error.message });
+    }
+  },
+
+  async me(req, res) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Google OAuth routes
+  googleAuth: passport.authenticate('google', {
+    scope: ['profile', 'email']
+  }),
+
+  async googleCallback(req, res) {
+    try {
+      console.log('Google callback triggered');
+      console.log('User from passport:', req.user);
+      
+      const user = req.user;
+      if (!user) {
+        console.error('No user found in request');
+        return res.redirect(`http://localhost:3000/login?error=auth_failed`);
+      }
+
+      const token = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '24h' }
+      );
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+      });
+
+      console.log('Token set, redirecting to frontend');
+      // Redirect to frontend callback page
+      res.redirect(`http://localhost:3000/auth/callback`);
+    } catch (error) {
+      console.error('Google callback error:', error);
+      res.redirect(`http://localhost:3000/login?error=server_error`);
     }
   }
 };

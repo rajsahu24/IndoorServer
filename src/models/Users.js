@@ -3,12 +3,16 @@ const bcrypt = require('bcrypt');
 
 class User {
   static async create(userData) {
-    const { email, password, phone, role = 'guest', name } = userData;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const { email, password, phone, role = 'guest', name, google_id } = userData;
+    let passwordHash = null;
+    
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 10);
+    }
     
     const result = await pool.query(
-      'INSERT INTO users (email,phone, password_hash, role, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, phone, role, name, created_at',
-      [email, phone, passwordHash, role, name]
+      'INSERT INTO users (email, phone, password_hash, role, name, google_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, phone, role, name, google_id, created_at',
+      [email, phone, passwordHash, role, name, google_id]
     );
     return result.rows[0];
   }
@@ -41,7 +45,7 @@ class User {
   }
 
   static async update(id, data) {
-    const allowed = ['email', 'phone', 'role', 'name', 'password','building_id', 'unit_id', 'booking_id',   'metadata'];
+    const allowed = ['email', 'phone', 'role', 'name', 'password', 'building_id', 'unit_id', 'booking_id', 'metadata', 'google_id'];
     const entries = Object.entries(data || {}).filter(([k]) => allowed.includes(k));
     if (entries.length === 0) {
       return null;
@@ -63,7 +67,7 @@ class User {
     }
     values.push(id);
 
-    const query = `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, email, phone, role, name,   created_at`;
+    const query = `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, email, phone, role, name, google_id, created_at`;
     const result = await pool.query(query, values);
     return result.rows[0] || null;
   }

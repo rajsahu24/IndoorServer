@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip')) {
+  if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip') || file.mimetype.startsWith("image/") ) {
     cb(null, true);
   } else {
     cb(new Error('Only ZIP files are allowed'), false);

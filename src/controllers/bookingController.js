@@ -54,12 +54,10 @@ const bookingController = {
         metadata
       } = req.body;
 
-      // Handle events from both direct events parameter and metadata.events
+      // Handle events from direct events parameter only
       let eventsList = [];
       if (events && Array.isArray(events)) {
         eventsList = events;
-      } else if (metadata?.events) {
-        eventsList = [metadata.events];
       }
 
       
@@ -104,28 +102,17 @@ const bookingController = {
       let createdEvents = [];
       if (eventsList && Array.isArray(eventsList) && eventsList.length > 0) {
         for (const eventData of eventsList) {
-          console.log('Processing event data:', eventData);
-          const { event_name, venue_id,  start_date, end_date } = eventData;
+          const { event_name, venue_id, start_date: event_start, end_date: event_end, descripion } = eventData;
           
-          if (event_name) {
-            // Find venue_id by venue_name if provided
-            
-            // if (venue_id) {
-            //   const venueQuery = 'SELECT id FROM pois WHERE name = $1 AND category = $2';
-            //   const venueResult = await client.query(venueQuery, [venue_name, 'venue']);
-            //   if (venueResult.rows.length > 0) {
-            //     venue_id = venueResult.rows[0].id;
-            //   }
-            // }
-            
+          if (event_name && venue_id) {
             const event = await Event.create({
               booking_id: booking.id,
               name: event_name,
               venue_id: venue_id,
               event_type: 'general',
-              start_time: start_date,
-              end_time: end_date,
-              description: null,
+              start_time: event_start + 'T00:00:00',
+              end_time: event_end + 'T23:59:59',
+              description: descripion || null,
               metadata: {}
             });
             createdEvents.push(event);
