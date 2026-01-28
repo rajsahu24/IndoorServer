@@ -6,7 +6,12 @@ const authController = {
   async register(req, res) {
     try {
       const { email, phone, password, role, name } = req.body;
-
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true, 
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000
+      };
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
         return res.status(400).json({ error: 'Email already exists' });
@@ -20,11 +25,7 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000
-      });
+      res.cookie('token', token, cookieOptions);
 
       res.status(201).json({ user, token });
     } catch (error) {
@@ -53,11 +54,7 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000
-      });
+      res.cookie('token', cookieOptions,token);
 
       res.json({
         token,
@@ -154,7 +151,11 @@ const authController = {
 
   async logout(req, res) {
     try {
-      res.clearCookie('token');
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+    });
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -167,6 +168,7 @@ const authController = {
       if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
+      
       res.json({
         id: user.id,
         name: user.name,
@@ -193,6 +195,12 @@ const authController = {
         console.error('No user found in request');
         return res.redirect(`http://localhost:3000/login?error=auth_failed`);
       }
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true, 
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000
+      };
 
       const token = jwt.sign(
         { userId: user.id, role: user.role },
@@ -200,12 +208,7 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
-      });
+      res.cookie('token', token, cookieOptions);
 
       console.log('Token set, redirecting to frontend');
       // Redirect to frontend callback page

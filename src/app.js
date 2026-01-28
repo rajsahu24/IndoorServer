@@ -27,9 +27,10 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:3000","http://localhost:5173"], // EXACT frontend origin
+  origin: ["http://localhost:3000","http://localhost:5173","https://invitation-backend-production-7fe4.up.railway.app"], // EXACT frontend origin
   credentials: true
 }));
+app.set('trust proxy', 1)
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 

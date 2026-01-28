@@ -45,7 +45,7 @@ class Guest {
       SELECT *
       FROM guests
       ORDER BY created_at ASC
-    `;  
+    `;
     const result = await pool.query(query);
     return result.rows;
   }
@@ -150,19 +150,19 @@ class Guest {
   /**
    * Bulk create guests from file data
    */
-  static async bulkCreate(guestsData, booking_id, invitation_id ) {
+  static async bulkCreate(guestsData, booking_id, invitation_id) {
     const client = await pool.connect();
-    
+
     const results = { successful: [], failed: [] };
- 
-   
+
+
     try {
       await client.query('BEGIN');
 
       for (const guestData of guestsData) {
         try {
           const { name, phone, email, guest_type, invitation_id, booking_id, metadata = {} } = guestData;
-          
+
           if (!name) {
             throw new Error('Name is required');
           }
@@ -173,7 +173,7 @@ class Guest {
             RETURNING *
           `;
 
-        const result = await client.query(query, [name, phone, email, guest_type, booking_id, invitation_id, nanoid(10), 0, metadata]);
+          const result = await client.query(query, [name, phone, email, guest_type, booking_id, invitation_id, nanoid(10), 0, metadata]);
           results.successful.push(result.rows[0]);
         } catch (error) {
           results.failed.push({ data: guestData, error: error.message });

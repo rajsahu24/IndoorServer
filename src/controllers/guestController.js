@@ -5,7 +5,6 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const XLSX = require('xlsx');
 const fs = require('fs');
-const { nanoid } = require('nanoid');
 
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });

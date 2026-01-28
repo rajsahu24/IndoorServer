@@ -273,15 +273,15 @@ CREATE TABLE users (
     role user_role NOT NULL DEFAULT 'guest',
     name VARCHAR(255) NOT NULL,
     metadata JSONB DEFAULT '{}',
-    building_id UUID REFERENCES buildings(id),
-    unit_id UUID REFERENCES units(id),
-    booking_id REFERENCES bookings(id),
+    -- building_id UUID REFERENCES buildings(id),
+    -- unit_id UUID REFERENCES units(id),
+    -- booking_id REFERENCES bookings(id),
     google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE type AS ENUM ('wedding', 'birthday');
+    CREATE TYPE type AS ENUM ('wedding', 'birthday');
 
 CREATE TABLE invitations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
