@@ -8,7 +8,7 @@ const authController = {
       const { email, phone, password, role, name } = req.body;
       const cookieOptions = {
         httpOnly: true,
-        secure: true, 
+        secure: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
       };
@@ -54,7 +54,14 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-      res.cookie('token', cookieOptions,token);
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000
+      };
+
+      res.cookie('token', token, cookieOptions);
 
       res.json({
         token,
@@ -155,7 +162,7 @@ const authController = {
         httpOnly: true,
         secure: true,
         sameSite: 'none',
-    });
+      });
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -168,7 +175,7 @@ const authController = {
       if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
-      
+
       res.json({
         id: user.id,
         name: user.name,
@@ -189,7 +196,7 @@ const authController = {
     try {
       console.log('Google callback triggered');
       console.log('User from passport:', req.user);
-      
+
       const user = req.user;
       if (!user) {
         console.error('No user found in request');
@@ -197,7 +204,7 @@ const authController = {
       }
       const cookieOptions = {
         httpOnly: true,
-        secure: true, 
+        secure: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
       };
