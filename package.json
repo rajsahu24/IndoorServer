@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "init-db": "node database/init.js"
+    "init-db": "node database/init.js",
+    "test": "echo \"No tests yet\""
   },
   "dependencies": {
     "@types/passport-google-oauth20": "^2.0.17",
