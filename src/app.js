@@ -3,7 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
-
+const app = express();
 app.use(helmet());
 
 // Handle preflights very early
@@ -43,7 +43,7 @@ const roomAllocationRoutes = require('./routes/roomAllocationRoutes');
 const requestFromData = require('./routes/requestFromData');
 const authRoutes = require('./routes/auth');
 const invitationRoutes = require('./routes/invitations');
-const app = express();
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
