@@ -6,10 +6,7 @@ require('dotenv').config();
 const app = express();
 app.use(helmet());
 
-// Handle preflights very early
-app.options('*', cors());
-
-app.use(cors({
+const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
@@ -18,7 +15,12 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-}));
+};
+
+// Handle preflights very early with the same options
+app.options('*', cors(corsOptions));
+
+app.use(cors(corsOptions));
 
 app.set('trust proxy', 1);
 app.use(cookieParser());
@@ -67,7 +69,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/navigation', navigationRoutes);
-app.use(`/api/buildings`,buildingRoutes);
+app.use(`/api/buildings`, buildingRoutes);
 app.use('/api/floors', floorRoutes);
 app.use('/api/venues', venueRoutes);
 app.use('/api/rooms', roomRoutes);

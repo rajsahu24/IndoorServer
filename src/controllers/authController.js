@@ -201,7 +201,7 @@ const authController = {
       const user = req.user;
       if (!user) {
         console.error('No user found in request');
-        return res.redirect(`http://localhost:3000/login?error=auth_failed`);
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
       }
       const cookieOptions = {
         httpOnly: true,
@@ -220,10 +220,10 @@ const authController = {
 
       console.log('Token set, redirecting to frontend');
       // Redirect to frontend callback page
-      res.redirect(`http://localhost:3000/auth/callback`);
+      res.redirect(`${process.env.FRONTEND_URL}/auth/callback`);
     } catch (error) {
       console.error('Google callback error:', error);
-      res.redirect(`http://localhost:3000/login?error=server_error`);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
     }
   }
 };
