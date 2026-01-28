@@ -4,6 +4,28 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+app.use(helmet());
+
+// Handle preflights very early
+app.options('*', cors());
+
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://invitation-frontend-five.vercel.app',   // no trailing slash
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+}));
+
+app.set('trust proxy', 1);
+app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
+
+
+
 const unitRoutes = require('./routes/units');
 const routeRoutes = require('./routes/routes');
 const poiRoutes = require('./routes/pois');
@@ -25,17 +47,17 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(helmet());
-app.use(cors({
-  origin: ["http://localhost:3000",
-    "http://localhost:5173",
-    "https://invitation-backend-production-7fe4.up.railway.app",
-    "https://invitation-frontend-five.vercel.app","https://invitation-frontend-five.vercel.app/"], // EXACT frontend origin
-  credentials: true
-}));
-app.set('trust proxy', 1)
-app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
+// app.use(helmet());
+// app.use(cors({
+//   origin: ["http://localhost:3000",
+//     "http://localhost:5173",
+//     "https://invitation-backend-production-7fe4.up.railway.app",
+//     "https://invitation-frontend-five.vercel.app","https://invitation-frontend-five.vercel.app/"], // EXACT frontend origin
+//   credentials: true
+// }));
+// app.set('trust proxy', 1)
+// app.use(cookieParser());
+// app.use(express.json({ limit: '10mb' }));
 
 // Routes
 app.use('/api/units', unitRoutes);
