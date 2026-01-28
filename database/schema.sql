@@ -1,6 +1,25 @@
--- Enable PostGIS extension
-CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Buildings table
+CREATE TABLE buildings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    address TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Floors table
+CREATE TABLE floors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    building_id UUID NOT NULL REFERENCES buildings(id),
+    floor_name VARCHAR(10) NOT NULL,
+    name VARCHAR(255),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Units table (areas like shops, facilities, rooms)
 CREATE TABLE units (
@@ -10,7 +29,7 @@ CREATE TABLE units (
     floor_id UUID NOT NULL REFERENCES floors(id), 
     building_id VARCHAR(100),
     metadata JSONB DEFAULT '{}', 
-    geom GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
+    -- geom GEOMETRY(MULTIPOLYGON, 4326) NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
      -- category VARCHAR(100),
@@ -32,11 +51,56 @@ CREATE TABLE routes (
     to_poi_id UUID, 
     building_id VARCHAR(100),
     floor_id UUID NOT NULL REFERENCES floors(id),  
-    distance DECIMAL GENERATED ALWAYS AS (ST_Length(geometry::geography)) STORED,
-    geometry GEOMETRY(LINESTRING, 4326) NOT NULL, 
+    -- distance DECIMAL GENERATED ALWAYS AS (ST_Length(geometry::geography)) STORED,
+    -- geometry GEOMETRY(LINESTRING, 4326) NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
+-- Bookings table
+CREATE TABLE bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    building_id UUID NOT NULL REFERENCES buildings(id),
+    booking_category VARCHAR(50) NOT NULL,
+    host_id VARCHAR(100),
+    host_name VARCHAR(255) NOT NULL,
+    host_email VARCHAR(255) UNIQUE NOT NULL,
+    host_phone VARCHAR(20) ,
+    host_metadata JSONB DEFAULT '{}',
+    -- events JSONB DEFAULT '[]',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    guest_count INTEGER,
+    status VARCHAR(20) DEFAULT 'confirmed',
+    metadata JSONB DEFAULT '{}',
+    -- book_room JSONB DEFAULT [],
+    -- book_venue JSONB DEFAULT [],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- RBAC Model
+
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(20) UNIQUE,   
+    password_hash VARCHAR(255),
+    role user_role NOT NULL DEFAULT 'guest',
+    name VARCHAR(255) NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    building_id UUID REFERENCES buildings(id),
+    unit_id UUID REFERENCES units(id),
+    booking_id UUID REFERENCES bookings(id),
+    google_id VARCHAR(255) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- POIs table (points of interest)
 CREATE TABLE pois (
@@ -49,20 +113,20 @@ CREATE TABLE pois (
     capacity INT DEFAULT 0,
     status int DEFAULT 0,
     -- floor_name VARCHAR(100),
-    geom GEOMETRY(POINT, 4326) NOT NULL,
+    -- geom GEOMETRY(POINT, 4326) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Spatial indexes
-CREATE INDEX idx_units_geometry ON units USING GIST (geometry);
-CREATE INDEX idx_routes_geometry ON routes USING GIST (geometry);
-CREATE INDEX idx_pois_geometry ON pois USING GIST (geometry);
+-- CREATE INDEX idx_units_geometry ON units USING GIST (geometry);
+-- CREATE INDEX idx_routes_geometry ON routes USING GIST (geometry);
+-- CREATE INDEX idx_pois_geometry ON pois USING GIST (geometry);
 
 -- Additional indexes
 CREATE INDEX idx_units_floor_id ON units (floor_id);
 CREATE INDEX idx_routes_floor_id ON routes (floor_id);
-CREATE INDEX idx_pois_type ON pois (type);
+-- CREATE INDEX idx_pois_type ON pois (type);
 CREATE INDEX idx_pois_building_id ON pois (building_id);
 
 -- Foreign key constraints
@@ -84,15 +148,7 @@ CREATE TRIGGER update_pois_updated_at BEFORE UPDATE ON pois FOR EACH ROW EXECUTE
 
 -- Hotel & Event Management Table
 
--- Buildings table
-CREATE TABLE buildings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    address TEXT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+
 
 -- Hotels table
 CREATE TABLE hotels (
@@ -105,16 +161,22 @@ CREATE TABLE hotels (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Floors table
-CREATE TABLE floors (
+    CREATE TYPE invitation_type AS ENUM ('wedding', 'birthday');
+
+CREATE TABLE invitations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    building_id UUID NOT NULL REFERENCES buildings(id),
-    floor_name VARCHAR(10) NOT NULL,
-    name VARCHAR(255),
-    metadata JSONB DEFAULT '{}',
+    user_id UUID NOT NULL REFERENCES users(id),
+    invitation_type invitation_type NOT NULL,
+    invitation_title VARCHAR(255),
+    invitation_message TEXT,
+    invitation_tag_line TEXT,
+    metadata JSONB DEFAULT '{}'  ,
+    quick_action JSONB DEFAULT '{}',
+    invitation_template_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- Rooms table (linked to units)
 CREATE TABLE room_booking (
@@ -142,27 +204,6 @@ CREATE TABLE venues (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bookings table
-CREATE TABLE bookings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    building_id UUID NOT NULL REFERENCES buildings(id),
-    booking_category VARCHAR(50) NOT NULL,
-    host_id VARCHAR(100),
-    host_name VARCHAR(255) NOT NULL,
-    host_email VARCHAR(255) UNIQUE NOT NULL,
-    host_phone VARCHAR(20) ,
-    host_metadata JSONB DEFAULT '{}',
-    -- events JSONB DEFAULT '[]',
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    guest_count INTEGER,
-    status VARCHAR(20) DEFAULT 'confirmed',
-    metadata JSONB DEFAULT '{}',
-    -- book_room JSONB DEFAULT [],
-    -- book_venue JSONB DEFAULT [],
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Guests table
 CREATE TABLE guests (
@@ -176,7 +217,7 @@ CREATE TABLE guests (
     metadata JSONB DEFAULT '{}',
     status BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     
 );
 
@@ -199,7 +240,7 @@ CREATE TABLE events (
     booking_id UUID REFERENCES bookings(id),
     name VARCHAR(255) NOT NULL,
     event_type VARCHAR(50),
-    event_location TEXT
+    event_location TEXT,
     invitation_id UUID REFERENCES invitations(id),
     venue_id UUID REFERENCES venues(id),
     start_time TIMESTAMP NOT NULL,
@@ -262,39 +303,8 @@ CREATE TABLE request_form_data (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- RBAC Model
-CREATE TYPE user_role AS ENUM ('admin', 'host', 'guest');
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20) UNIQUE,   
-    password_hash VARCHAR(255),
-    role user_role NOT NULL DEFAULT 'guest',
-    name VARCHAR(255) NOT NULL,
-    metadata JSONB DEFAULT '{}',
-    -- building_id UUID REFERENCES buildings(id),
-    -- unit_id UUID REFERENCES units(id),
-    -- booking_id REFERENCES bookings(id),
-    google_id VARCHAR(255) UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-    CREATE TYPE type AS ENUM ('wedding', 'birthday');
-
-CREATE TABLE invitations(
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    invitation_type type NOT NULL,
-    invitation_title VARCHAR(255),
-    invitation_message TEXT,
-    invitation_tag_line TEXT,
-    metadata JSONB DEFAULT '{}'  ,
-    quick_action JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
 
 CREATE TABLE InvitationImage(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -305,18 +315,18 @@ CREATE TABLE InvitationImage(
     position INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+);
 
 
 -- Additional indexes
 CREATE INDEX idx_hotels_building_id ON hotels (building_id);
 CREATE INDEX idx_floors_building_id ON floors (building_id);
-CREATE INDEX idx_rooms_floor_id ON rooms (floor_id);
+-- CREATE INDEX idx_rooms_floor_id ON rooms (floor_id);
 CREATE INDEX idx_users_email ON users (email);
 CREATE INDEX idx_users_role ON users (role);
 
 -- Update triggers for new tables
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();rooms_unit_id ON rooms (unit_id);
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE INDEX idx_venues_unit_id ON venues (unit_id);
 CREATE INDEX idx_guests_booking_id ON guests (booking_id);
 CREATE INDEX idx_room_allocations_guest_id ON room_allocations (guest_id);
@@ -331,7 +341,7 @@ CREATE INDEX idx_guest_devices_guest_id ON guest_devices (guest_id);
 CREATE TRIGGER update_buildings_updated_at BEFORE UPDATE ON buildings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_hotels_updated_at BEFORE UPDATE ON hotels FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_floors_updated_at BEFORE UPDATE ON floors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON rooms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON rooms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_venues_updated_at BEFORE UPDATE ON venues FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_guests_updated_at BEFORE UPDATE ON guests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
