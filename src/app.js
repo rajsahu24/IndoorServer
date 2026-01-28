@@ -30,7 +30,7 @@ app.use(cors({
   origin: ["http://localhost:3000",
     "http://localhost:5173",
     "https://invitation-backend-production-7fe4.up.railway.app",
-    "https://invitation-frontend-five.vercel.app"], // EXACT frontend origin
+    "https://invitation-frontend-five.vercel.app","https://invitation-frontend-five.vercel.app/"], // EXACT frontend origin
   credentials: true
 }));
 app.set('trust proxy', 1)
