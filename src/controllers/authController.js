@@ -10,7 +10,8 @@ const authController = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: 'invitation-frontend-five.vercel.app'
       };
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
@@ -58,7 +59,8 @@ const authController = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: "invitation-frontend-five.vercel.app"
       };
 
       res.cookie('token', token, cookieOptions);
@@ -162,7 +164,8 @@ const authController = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: "invitation-frontend-five.vercel.app"
       });
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
@@ -207,7 +210,8 @@ const authController = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: "invitation-frontend-five.vercel.app"
       };
 
       const token = jwt.sign(
