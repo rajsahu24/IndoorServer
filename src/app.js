@@ -6,12 +6,19 @@ require('dotenv').config();
 const app = express();
 app.use(helmet());
 
+// Build CORS allowed origins from environment variables
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
+// Add FRONTEND_URL from environment if available
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://invitation-frontend-five.vercel.app',   // no trailing slash
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],

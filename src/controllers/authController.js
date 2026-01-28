@@ -8,8 +8,8 @@ const authController = {
       const { email, phone, password, role, name } = req.body;
       const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000
       };
       const existingUser = await User.findByEmail(email);
@@ -56,8 +56,8 @@ const authController = {
 
       const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000
       };
 
@@ -160,8 +160,8 @@ const authController = {
     try {
       res.clearCookie('token', {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000
       });
       res.json({ message: 'Logged out successfully' });
@@ -205,8 +205,8 @@ const authController = {
       }
       const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000
       };
 
