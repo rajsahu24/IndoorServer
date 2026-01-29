@@ -15,6 +15,7 @@ const allowedOrigins = [
 // Add FRONTEND_URL from environment if available
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
+  allowedOrigins.push(process.env.TEMPLATE_URL);
 }
 
 const corsOptions = {

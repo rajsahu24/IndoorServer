@@ -306,7 +306,7 @@ CREATE TABLE request_form_data (
 
 
 
-CREATE TABLE InvitationImage(
+CREATE TABLE invitation_images(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
