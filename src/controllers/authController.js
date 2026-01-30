@@ -7,11 +7,11 @@ const authController = {
     try {
       const { email, phone, password, role, name } = req.body;
       const cookieOptions = {
-          httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  maxAge: 24 * 60 * 60 * 1000,
-  path: '/'
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
       };
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
@@ -56,11 +56,11 @@ const authController = {
       );
 
       const cookieOptions = {
-          httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  maxAge: 24 * 60 * 60 * 1000,
-  path: '/'
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
       };
 
       res.cookie('token', token, cookieOptions);
@@ -161,11 +161,11 @@ const authController = {
   async logout(req, res) {
     try {
       res.clearCookie('token', {
-          httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  maxAge: 24 * 60 * 60 * 1000,
-  path: '/'
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
       });
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
@@ -207,11 +207,11 @@ const authController = {
         return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
       }
       const cookieOptions = {
-          httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  maxAge: 24 * 60 * 60 * 1000,
-  path: '/'
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
       };
 
       const token = jwt.sign(
@@ -222,9 +222,9 @@ const authController = {
 
       res.cookie('token', token, cookieOptions);
 
-      console.log('Token set, redirecting to frontend');
-      // Redirect to frontend callback page
-      res.redirect(`${process.env.FRONTEND_URL}/auth/callback`);
+     
+      // Redirect to frontend callback page with token in URL so BFF can capture it
+      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
     } catch (error) {
       console.error('Google callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
