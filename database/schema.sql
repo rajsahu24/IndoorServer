@@ -173,7 +173,7 @@ CREATE TABLE invitations(
     metadata JSONB DEFAULT '{}'  ,
     quick_action JSONB DEFAULT '{}',
     invitation_template_id VARCHAR(100),
-    public_id VARCHAR(12) UNIQUE,
+    public_id VARCHAR(12) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

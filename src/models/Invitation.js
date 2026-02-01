@@ -4,7 +4,7 @@ const { nanoid } = require('nanoid');
 class Invitation {
   static async create(data, user_id) {
     const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id } = data;
-    const public_id = data.public_id || nanoid(10);
+    const public_id =  nanoid(10);
     const query = `
       INSERT INTO invitations (user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
