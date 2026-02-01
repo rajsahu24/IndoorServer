@@ -173,6 +173,7 @@ CREATE TABLE invitations(
     metadata JSONB DEFAULT '{}'  ,
     quick_action JSONB DEFAULT '{}',
     invitation_template_id VARCHAR(100),
+    public_id VARCHAR(12) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -215,10 +216,10 @@ CREATE TABLE guests (
     phone VARCHAR(20),
     email VARCHAR(255),
     metadata JSONB DEFAULT '{}',
+    rsvp_token VARCHAR(20) NOT NULL
     status BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    
 );
 
 -- Room allocations table
