@@ -3,7 +3,8 @@ const { nanoid } = require('nanoid');
 
 class Invitation {
   static async create(data, user_id) {
-    const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id = nanoid(10), } = data;
+    const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id } = data;
+    const public_id = data.public_id || nanoid(10);
     const query = `
       INSERT INTO invitations (user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -29,6 +30,15 @@ class Invitation {
     const result = await pool.query(query, [id]);
     return result.rows[0];
   } 
+
+  static async findByPublicId(public_id) {
+    const query = `
+      SELECT * FROM invitations
+      WHERE public_id = $1
+    `;
+    const result = await pool.query(query, [public_id]);
+    return result.rows[0];
+  }
 
   static async findGuestByInvitationId(invitation_id) {
     const query = `
@@ -58,13 +68,13 @@ class Invitation {
   } 
 
   static async update(id, data) {
-    const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action } = data;
+    const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id } = data;
     const query = `
       UPDATE invitations 
-      SET invitation_title = $2, invitation_type = $3, invitation_message = $4, invitation_tag_line = $5, metadata = $6, quick_action = $7, invitation_template_id = $8
+      SET invitation_title = $2, invitation_type = $3, invitation_message = $4, invitation_tag_line = $5, metadata = $6, quick_action = $7, invitation_template_id = $8, updated_at = now()
       WHERE id = $1
       RETURNING *`;
-    const result = await pool.query(query, [id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id]);
+    const result = await pool.query(query, [id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id]);
     return result.rows[0];
   }
 
