@@ -53,6 +53,7 @@ const roomAllocationRoutes = require('./routes/roomAllocationRoutes');
 const requestFromData = require('./routes/requestFromData');
 const authRoutes = require('./routes/auth');
 const invitationRoutes = require('./routes/invitations');
+const templatesRoutes = require('./routes/template');
 
 const PORT = process.env.PORT || 5000;
 
@@ -87,6 +88,7 @@ app.use('/api/room-allocations', roomAllocationRoutes);
 app.use('/api/request-from-data', requestFromData);
 app.use('/api/auth', authRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/templates', templatesRoutes);
 
 
 

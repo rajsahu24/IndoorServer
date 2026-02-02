@@ -22,7 +22,7 @@ router.get('/get_imageby_id/:image_id',invitationController.getImageById);
 router.get('/rsvp/:rsvp_token', invitationController.getInvitationByRsvpToken);
 
 router.patch('/guest_rsvp/:rsvp_token', invitationController.updateGuestRsvpStatus);
-
+router.get('/public/:public_id', invitationController.findByPublicId);
 
 
 module.exports = router;

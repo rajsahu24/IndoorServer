@@ -188,6 +188,7 @@ exports.findGuestByInvitationId = async (req, res) => {
 
 exports.findById = async (req, res) => {
   try {
+    console.log('Fetching invitation by ID:', req.params.id);
     const invitation = await Invitation.findById(req.params.id);
     if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });
@@ -389,7 +390,16 @@ exports.updateGuestRsvpStatus = async (req, res) => {
   }
 }
 
+exports.findByPublicId = async (req, res) => {
+  try {
+    const public_id = req.params.public_id;
+    const invitation = await Invitation.findByPublicId(public_id);
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
 
-
-
-
+    res.json(invitation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}

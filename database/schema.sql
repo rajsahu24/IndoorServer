@@ -319,6 +319,16 @@ CREATE TABLE invitation_images(
 );
 
 
+CREATE TABLE templates(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    template_type VARCHAR(50),
+    template_name VARCHAR(100),
+    template_key VARCHAR(100),
+    is_active boolean DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
 -- Additional indexes
 CREATE INDEX idx_hotels_building_id ON hotels (building_id);
 CREATE INDEX idx_floors_building_id ON floors (building_id);
