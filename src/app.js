@@ -10,6 +10,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://inviteera.com',
 ];
 
 // Add FRONTEND_URL from environment if available
