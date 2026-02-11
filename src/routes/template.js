@@ -7,5 +7,8 @@ router.get('/', templateController.getAll);
 router.get('/:id', templateController.getById);
 router.put('/:id', templateController.update);
 router.delete('/:id', templateController.delete);
+router.get('/invitation/:id', templateController.getTemplateByInvitationId);
+
+
 
 module.exports = router;

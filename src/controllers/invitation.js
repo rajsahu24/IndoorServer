@@ -40,9 +40,6 @@ function parseExcel(filePath) {
 
 exports.create = async (req, res) => {
   try {
-    
-    // Create invitation first
-    
     const invitation = await Invitation.create(req.body, req.user.id);
     const invitation_id = invitation.id;
     const eventsList = req.body.events || req.body.event;
@@ -188,7 +185,6 @@ exports.findGuestByInvitationId = async (req, res) => {
 
 exports.findById = async (req, res) => {
   try {
-    console.log('Fetching invitation by ID:', req.params.id);
     const invitation = await Invitation.findById(req.params.id);
     if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });

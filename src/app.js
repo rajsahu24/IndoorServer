@@ -55,8 +55,12 @@ const requestFromData = require('./routes/requestFromData');
 const authRoutes = require('./routes/auth');
 const invitationRoutes = require('./routes/invitations');
 const templatesRoutes = require('./routes/template');
+const templateSectionRoutes = require('./routes/templateSection');
+const invitationDataRoutes = require('./routes/invitationData');
 
 const PORT = process.env.PORT || 5000;
+
+
 
 // Middleware
 // app.use(helmet());
@@ -90,7 +94,8 @@ app.use('/api/request-from-data', requestFromData);
 app.use('/api/auth', authRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/templates', templatesRoutes);
-
+app.use('/api/template-sections', templateSectionRoutes);
+app.use('/api/invitation-data', invitationDataRoutes);
 
 
 app.get('/health', (req, res) => {

@@ -324,7 +324,34 @@ CREATE TABLE templates(
     template_type VARCHAR(50),
     template_name VARCHAR(100),
     template_key VARCHAR(100),
+    template_image VARCHAR(200),
+    template_sections JSONB NOT NULL,
+    template_data JSONB DEFAULT '{}',
     is_active boolean DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+
+
+CREATE TABLE template_sections(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    template_id UUID NOT NULL REFERENCES templates(id),
+    section_key VARCHAR(100),
+    section_type VARCHAR(100),
+    schema JSONB DEFAULT '{}',
+    display_order INT,
+    is_active boolean DEFAULT true,
+    is_repeated boolean DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+CREATE TABLE invitation_data(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
+    template_sections_id UUID NOT NULL REFERENCES template_sections(id) ON DELETE CASCADE,
+    data JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )

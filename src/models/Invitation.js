@@ -24,7 +24,6 @@ class Invitation {
     return result.rows;
   }
   static async findById(id) {
-    console.log('Inside Invitation model - findById with id:', id);
     const query = `
 SELECT
   i.*,

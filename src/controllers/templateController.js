@@ -34,7 +34,7 @@ const templateController = {
 
     async update(req, res) {
         try {
-            const [updated] = await Template.update(req.body, {
+            const updated = await Template.update(req.body, {
                 where: { id: req.params.id },
             });
             if (!updated) {
@@ -55,6 +55,19 @@ const templateController = {
                 return res.status(404).json({ error: 'Template not found' });
             }
             res.json({ message: 'Template deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getTemplateByInvitationId(req, res) {
+        try {
+            const invitationId = req.params.id;
+            const template = await Template.findByInvitationId(invitationId);
+            if (!template) {
+                return res.status(404).json({ error: 'Template not found' });
+            }
+            res.json(template);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

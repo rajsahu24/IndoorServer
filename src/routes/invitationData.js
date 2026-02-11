@@ -1,0 +1,19 @@
+const express = require('express');
+const router = express.Router();
+const upload = require('../middleware/upload');
+const invitationDataController = require('../controllers/InvitationDataController');
+
+router.post('/', invitationDataController.create);
+router.get('/', invitationDataController.getAll);
+router.get('/:id', invitationDataController.getById);
+router.put('/:id', invitationDataController.update);
+router.patch('/invitation/:invitation_id/template_section/:template_section_id', invitationDataController.patchData);
+router.delete('/:id', invitationDataController.delete);
+router.get('/invitation/:invitation_id/template_section/:template_section_id', invitationDataController.getByInvitationAndTemplateSection);
+router.get('/invitation/:invitation_id', invitationDataController.getAllByInvitationId);
+router.post('/image', upload.single('image'), invitationDataController.uploadImage);
+router.delete('/image/:image_id', invitationDataController.deleteImage);
+router.get(`/public_id/:public_id`, invitationDataController.getDataByPublicId);
+router.get(`/rsvp/:rsvp_token`, invitationDataController.getDataByRsvpToken);
+
+module.exports = router;
