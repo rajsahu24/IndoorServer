@@ -79,7 +79,7 @@ const invitationDataController = {
     },
     async getByInvitationAndTemplateSection(req, res) {
         try {
-            console.log('Received params:', req.params); // Debug log to check params
+           // Debug log to check params
             const { invitation_id, template_section_id } = req.params;
             const invitationData = await InvitationData.findByInvitationAndTemplateSection(invitation_id, template_section_id);
             if (!invitationData) {
@@ -200,8 +200,25 @@ const invitationDataController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
-    }
-
+    },
+    async deleteRepeatedData(req, res) {
+      try {
+        const { invitation_id, template_section_id, nano_id } = req.params;
+        const deletedData = await InvitationData.deleteRepeatedData(invitation_id, template_section_id, nano_id);
+        res.json(deletedData);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+    async patchRepeatedEntry(req, res) {
+      try {
+        const { invitation_id, template_section_id, nano_id } = req.params;
+        const updatedEntry = await InvitationData.patchRepeatedEntry(invitation_id, template_section_id, nano_id, req.body);
+        res.json(updatedEntry);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    },
 };
 
 module.exports = invitationDataController;

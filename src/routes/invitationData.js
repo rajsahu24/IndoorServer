@@ -15,5 +15,6 @@ router.post('/image', upload.single('image'), invitationDataController.uploadIma
 router.delete('/image/:image_id', invitationDataController.deleteImage);
 router.get(`/public_id/:public_id`, invitationDataController.getDataByPublicId);
 router.get(`/rsvp/:rsvp_token`, invitationDataController.getDataByRsvpToken);
-
+router.delete('/delete_repeated_entry/invitation/:invitation_id/template_section/:template_section_id/nano_id/:nano_id', invitationDataController.deleteRepeatedData);
+router.patch('/patch_repeated_entry/invitation/:invitation_id/template_section/:template_section_id/nano_id/:nano_id', invitationDataController.patchRepeatedEntry);
 module.exports = router;

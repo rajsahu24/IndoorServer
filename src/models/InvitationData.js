@@ -1,5 +1,5 @@
 const pool = require('../database');
-
+const { nanoid } = require('nanoid');
 class InvitationData {
   static async create(invitationData) {
     console.log(invitationData);
@@ -53,16 +53,32 @@ class InvitationData {
     return result.rowCount > 0;
   }
 
-    static async patchData(invitation_id, template_section_id, partialData) {
-    const query = `
-      UPDATE invitation_data
-      SET data = data || $3::jsonb, updated_at = CURRENT_TIMESTAMP
-      WHERE invitation_id = $1 AND template_section_id = $2
-      RETURNING *
-    `;
-    const result = await pool.query(query, [invitation_id, template_section_id, JSON.stringify(partialData)]);
-    return result.rows[0];
+static async patchData(invitation_id, template_section_id, partialData) {
+  // Ensure every event has ID
+  if (partialData.is_repeated) {
+    partialData.data = partialData.data.map(event => ({
+      id: event.id || nanoid(10),
+      ...event
+    }));
   }
+
+  const query = `
+    UPDATE invitation_data
+    SET data = $3::jsonb,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE invitation_id = $1 AND template_section_id = $2
+    RETURNING *
+  `;
+
+  const result = await pool.query(
+    query,
+    [invitation_id, template_section_id, JSON.stringify(partialData.data)]
+  );
+
+  return result.rows[0];
+}
+
+
 
   static async findByInvitationAndTemplateSection(invitation_id, template_section_id) {
 
@@ -76,6 +92,7 @@ class InvitationData {
 
 
   static async getAllByInvitationId(invitation_id) {
+     // Debug log to check the invitation_id
     const query = `
     SELECT 
       t.template_name,
@@ -83,6 +100,7 @@ class InvitationData {
       idata.id AS invitation_data_id,
       idata.template_section_id,
       ts.section_type AS section_name,
+      ts.schema AS section_schema,
       idata.data
     FROM invitations inv
     JOIN templates t 
@@ -94,7 +112,27 @@ class InvitationData {
     WHERE inv.id = $1
     `;
     const result = await pool.query(query, [invitation_id]);
-    return result.rows;
+    if (result.rows.length === 0) return null;
+
+  // Base template info (same for all rows)
+  const response = {
+    template_name: result.rows[0].template_name,
+    template_type: result.rows[0].template_type,
+  };
+
+  // Loop through sections
+  for (const row of result.rows) {
+    if (!row.section_name) continue;
+
+    response[row.section_name] = {
+      invitation_data_id: row.invitation_data_id,
+      template_section_id: row.template_section_id,
+      data: row.data,
+      schema: row.section_schema || null,
+    };
+  }
+
+  return response;
   }
 
 
@@ -140,6 +178,7 @@ class InvitationData {
       idata.id AS invitation_data_id,
       idata.template_section_id,
       ts.section_type AS section_name,
+      ts.schema AS section_schema,
       idata.data
     FROM invitations inv
     JOIN templates t 
@@ -151,7 +190,27 @@ class InvitationData {
     WHERE inv.public_id = $1
     `;
     const result = await pool.query(query, [public_id]);
-    return result.rows;
+    if (result.rows.length === 0) return null;
+
+  // Base template info (same for all rows)
+  const response = {
+    template_name: result.rows[0].template_name,
+    template_type: result.rows[0].template_type,
+  };
+
+  // Loop through sections
+  for (const row of result.rows) {
+    if (!row.section_name) continue;
+
+    response[row.section_name] = {
+      invitation_data_id: row.invitation_data_id,
+      template_section_id: row.template_section_id,
+      data: row.data,
+      schema: row.section_schema || null,
+    };
+  }
+
+  return response;
   }
 
   static async findByRsvpToken(rsvp_token) {
@@ -162,6 +221,7 @@ class InvitationData {
       idata.id AS invitation_data_id,
       idata.template_section_id,
       ts.section_type as section_name,
+      ts.schema AS section_schema,
       idata.data
     FROM guests g
     JOIN invitations inv
@@ -175,8 +235,67 @@ class InvitationData {
     WHERE g.rsvp_token = $1
     `;
     const result = await pool.query(query, [rsvp_token]);
-    return result.rows;
+    if (result.rows.length === 0) return null;
+
+  // Base template info (same for all rows)
+  const response = {
+    template_name: result.rows[0].template_name,
+    template_type: result.rows[0].template_type,
+  };
+
+  // Loop through sections
+  for (const row of result.rows) {
+    if (!row.section_name) continue;
+
+    response[row.section_name] = {
+      invitation_data_id: row.invitation_data_id,
+      template_section_id: row.template_section_id,
+      data: row.data,
+      schema: row.section_schema || null,
+    };
   }
+
+  return response;
+  }
+
+
+  static async deleteRepeatedData(invitation_id, template_section_id, nano_id) {
+    const query = `
+  UPDATE invitation_data
+  SET data = COALESCE((
+    SELECT jsonb_agg(elem)
+    FROM jsonb_array_elements(data) elem
+    WHERE elem->>'id' != $3
+  ), '[]'::jsonb),
+  updated_at = CURRENT_TIMESTAMP
+  WHERE invitation_id = $1 AND template_section_id = $2
+  RETURNING *
+    `;
+    const result = await pool.query(query, [invitation_id, template_section_id, nano_id]);
+    return result.rows[0];    
+  }
+
+  static async patchRepeatedEntry(invitation_id, template_section_id, nano_id, updatedData) {
+    const query = `
+UPDATE invitation_data
+SET data = (
+  SELECT jsonb_agg(
+    CASE 
+      WHEN elem->>'id' = $3 THEN elem || $4::jsonb
+      ELSE elem
+    END
+  )
+  FROM jsonb_array_elements(data) elem
+),
+updated_at = CURRENT_TIMESTAMP
+WHERE invitation_id = $1 AND template_section_id = $2
+RETURNING *;
+    `;
+    const result = await pool.query(query, [invitation_id, template_section_id, nano_id, JSON.stringify(updatedData)]);
+    return result.rows[0];    
+  }
+
+  
 }
 
 module.exports = InvitationData;
