@@ -1,4 +1,4 @@
-const templateSection = require('../models/templateSection');
+const templateSection = require('../models/TemplateSection');
 
 const templateSectionController = {
     async create(req, res) {

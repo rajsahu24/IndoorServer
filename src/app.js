@@ -57,7 +57,7 @@ const invitationRoutes = require('./routes/invitations');
 const templatesRoutes = require('./routes/template');
 const templateSectionRoutes = require('./routes/templateSection');
 const invitationDataRoutes = require('./routes/invitationData');
-const sitemapRoute = require('./routes/sitemap.js');
+
 const PORT = process.env.PORT || 5000;
 
 
@@ -77,7 +77,7 @@ const PORT = process.env.PORT || 5000;
 
 // Routes
 
-app.use('/',sitemapRoute);
+
 app.use('/api/units', unitRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/pois', poiRoutes);
