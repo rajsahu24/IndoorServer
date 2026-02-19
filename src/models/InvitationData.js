@@ -62,6 +62,16 @@ static async patchData(invitation_id, template_section_id, partialData) {
     }));
   }
 
+  // Handle image data if present
+  if (partialData.image_url) {
+    partialData.data = {
+      ...partialData.data,
+      image_url: partialData.image_url,
+      public_id: partialData.public_id,
+      type: partialData.type || 'general'
+    };
+  }
+
   const query = `
     UPDATE invitation_data
     SET data = $3::jsonb,
@@ -276,6 +286,16 @@ static async patchData(invitation_id, template_section_id, partialData) {
   }
 
   static async patchRepeatedEntry(invitation_id, template_section_id, nano_id, updatedData) {
+    // Handle image upload if present
+    if (updatedData.image_url) {
+      const imageData = {
+        image_url: updatedData.image_url,
+        public_id: updatedData.public_id,
+        type: updatedData.type || 'general'
+      };
+      updatedData = { ...updatedData, ...imageData };
+    }
+
     const query = `
 UPDATE invitation_data
 SET data = (

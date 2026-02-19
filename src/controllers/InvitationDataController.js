@@ -1,16 +1,52 @@
 const InvitationData = require('../models/InvitationData');
 const fs = require('fs');
-const cloudinary = require('cloudinary').v2;
-const multer = require('multer');
-
-
-upload = multer({ dest: 'uploads/' })
+const cloudinary = require('../config/cloudinary');
 const invitationDataController = {
     async create(req, res) {
+        console.log("Creating Invitation Data with body:", req.body);
         try {
-            const invitationData = await InvitationData.create(req.body); 
+            let { invitation_id, template_section_id, data, is_repeated, image_field_key } = req.body;
+            
+            // Parse data if it's a string
+            if (typeof data === 'string') {
+                data = JSON.parse(data);
+            }
+
+            // Handle image upload if file is present
+            if (req.file) {
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "invitations",
+                    resource_type: "image",
+                });
+                
+                const imageData = {
+                    image_url: result.secure_url,
+                    public_id: result.public_id,
+                    type: req.body.type || 'general'
+                };
+
+                // Add image to data array if is_repeated
+                if (is_repeated === 'true' && Array.isArray(data)) {
+                    data = data.map(item => ({ ...item, ...imageData }));
+                } else if (Array.isArray(data)) {
+                    data[0] = { ...data[0], ...imageData };
+                } else {
+                    data = { ...data, ...imageData };
+                }
+                
+                fs.unlinkSync(req.file.path);
+            }
+
+            const invitationData = await InvitationData.create({ 
+                invitation_id, 
+                template_section_id, 
+                data 
+            }); 
             res.status(201).json(invitationData);
         } catch (error) {
+            if (req.file?.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
             res.status(400).json({ error: error.message });
         }
     },
@@ -68,12 +104,47 @@ const invitationDataController = {
     async patchData(req, res) {
         try {
             const { invitation_id, template_section_id } = req.params;
-            const updatedData = await InvitationData.patchData(invitation_id, template_section_id, req.body);
-            if (!updatedData) {
+            let { data, is_repeated } = req.body;
+            
+            // Parse data if it's a string
+            if (typeof data === 'string') {
+                data = JSON.parse(data);
+            }
+
+            // Handle image upload if file is present
+            if (req.file) {
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "invitations",
+                    resource_type: "image",
+                });
+                
+                const imageData = {
+                    image_url: result.secure_url,
+                    public_id: result.public_id,
+                    type: req.body.type || 'general'
+                };
+
+                // Add image to data
+                if (is_repeated === 'true' && Array.isArray(data)) {
+                    data = data.map(item => ({ ...item, ...imageData }));
+                } else if (Array.isArray(data)) {
+                    data[0] = { ...data[0], ...imageData };
+                } else {
+                    data = { ...data, ...imageData };
+                }
+                
+                fs.unlinkSync(req.file.path);
+            }
+
+            const patchedData = await InvitationData.patchData(invitation_id, template_section_id, { data, is_repeated });
+            if (!patchedData) {
                 return res.status(404).json({ error: 'Invitation Data not found' });
             }
-            res.json(updatedData);
+            res.json(patchedData);
         } catch (error) {
+            if (req.file?.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
             res.status(400).json({ error: error.message });
         }
     },
@@ -213,9 +284,31 @@ const invitationDataController = {
     async patchRepeatedEntry(req, res) {
       try {
         const { invitation_id, template_section_id, nano_id } = req.params;
-        const updatedEntry = await InvitationData.patchRepeatedEntry(invitation_id, template_section_id, nano_id, req.body);
+        let updatedData = req.body;
+
+        // Handle image upload if file is present
+        if (req.file) {
+          const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "invitations",
+            resource_type: "image",
+          });
+          
+          updatedData = {
+            ...updatedData,
+            image_url: result.secure_url,
+            public_id: result.public_id,
+            type: updatedData.type || 'general'
+          };
+          
+          fs.unlinkSync(req.file.path);
+        }
+
+        const updatedEntry = await InvitationData.patchRepeatedEntry(invitation_id, template_section_id, nano_id, updatedData);
         res.json(updatedEntry);
       } catch (error) {
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
         res.status(500).json({ error: error.message });
       }
     },

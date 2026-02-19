@@ -285,6 +285,8 @@ const guestController = {
       res.status(500).json({ error: error.message });
     }
   }
+  
+
 };
 
 // Helper function to parse CSV
@@ -319,5 +321,8 @@ getAvailableRooms() {
   const result = await pool.query(query);
   return result.rows;
 }
+
+
+
 
 module.exports = { guestController, upload };
