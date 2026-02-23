@@ -43,12 +43,12 @@ exports.create = async (req, res) => {
     const invitation = await Invitation.create(req.body, req.user.id);
     const invitation_id = invitation.id;
     const eventsList = req.body.events || req.body.event;
-    
+
     let createdEvents = [];
-    
+
     if (eventsList) {
       let eventsArray;
-      
+
       // Parse events if it's a string
       if (typeof eventsList === 'string') {
         try {
@@ -60,7 +60,7 @@ exports.create = async (req, res) => {
       } else {
         eventsArray = eventsList;
       }
-      
+
       if (Array.isArray(eventsArray) && eventsArray.length > 0) {
         for (const eventData of eventsArray) {
           console.log('Creating event:', invitation_id);
@@ -78,19 +78,19 @@ exports.create = async (req, res) => {
               metadata: {}
             });
 
-            
+
             createdEvents.push(event);
           }
         }
       }
     }
-    
+
     let guestResults = null;
 
     // Handle guest array from request body
     if (req.body.guests) {
       let guestsArray;
-      
+
       // Parse guests if it's a string
       if (typeof req.body.guests === 'string') {
         try {
@@ -102,16 +102,16 @@ exports.create = async (req, res) => {
       } else {
         guestsArray = req.body.guests;
       }
-      
+
       if (Array.isArray(guestsArray) && guestsArray.length > 0) {
         guestResults = await Guest.bulkCreate(guestsArray.map(g => ({
           ...g,
           invitation_id: invitation_id
         })));
-        
+
       }
     }
-    
+
     // Handle guest file upload
     if (req.file) {
       const filePath = req.file.path;
@@ -134,14 +134,14 @@ exports.create = async (req, res) => {
         ...g,
         invitation_id: invitation_id
       })));
-      
+
       // Combine results if both exist
       if (guestResults && Array.isArray(guestResults)) {
         guestResults = [...guestResults, ...fileGuestResults];
       } else {
         guestResults = fileGuestResults;
       }
-      
+
       // Clean up uploaded file
       fs.unlinkSync(filePath);
     }
@@ -155,7 +155,7 @@ exports.create = async (req, res) => {
 exports.findByUserId = async (req, res) => {
   try {
     const invitations = await Invitation.findByUserId(req.params.user_id);
-    
+
     // Fetch events for each invitation
     const invitationsWithEvents = await Promise.all(
       invitations.map(async (invitation) => {
@@ -164,7 +164,7 @@ exports.findByUserId = async (req, res) => {
         };
       })
     );
-    
+
     res.json(invitationsWithEvents);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -218,7 +218,7 @@ exports.update = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-  
+
 };
 
 exports.updates = async (req, res) => {
@@ -235,7 +235,8 @@ exports.updates = async (req, res) => {
       'invitation_message',
       'invitation_tag_line',
       'metadata',
-      'quick_action'
+      'quick_action',
+      'invitation_template_id'
     ];
 
     const filteredUpdates = Object.keys(updates)
@@ -334,7 +335,7 @@ exports.getImageById = async (req, res) => {
 exports.deleteImage = async (req, res) => {
   try {
     const image_id = req.params.image_id;
-    
+
     const image = await Invitation.getImageById(image_id);
     if (!image) {
       return res.status(404).json({ error: 'Image not found' });
@@ -355,18 +356,18 @@ exports.getInvitationByRsvpToken = async (req, res) => {
     const rsvp_token = req.params.rsvp_token;
     const invitation = await Invitation.getInvitationByRsvpToken(rsvp_token);
     console.log(`RSVP token: ${rsvp_token}, Invitation: `, invitation);
-    
+
     if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });
     }
-    
+
     res.json(invitation);
   } catch (error) {
     if (error.message === 'RSVP already accepted or invalid status') {
       return res.status(400).json({ error: error.message }); // Or 409 Conflict
     }
     res.status(500).json({ error: error.message });
-  } 
+  }
 };
 
 
@@ -377,7 +378,7 @@ exports.updateGuestRsvpStatus = async (req, res) => {
     const guest = await Invitation.updateGuestRsvpStatus(rsvp_token, status);
     if (!guest) {
       return res.status(404).json({ error: 'Guest not found' });
-    } 
+    }
     res.json(guest);
   } catch (error) {
     res.status(500).json({ error: error.message });
