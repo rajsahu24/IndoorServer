@@ -159,10 +159,8 @@ exports.findByUserId = async (req, res) => {
     // Fetch events for each invitation
     const invitationsWithEvents = await Promise.all(
       invitations.map(async (invitation) => {
-        const events = await Event.findByInvitationId(invitation.id);
         return {
           ...invitation,
-          events: events || []
         };
       })
     );
