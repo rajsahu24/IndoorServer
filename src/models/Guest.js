@@ -11,7 +11,6 @@ class Guest {
       phone,
       email,
       guest_type,
-      booking_id,
       invitation_id,
       rsvp_token = nanoid(10),
       status,
@@ -20,8 +19,8 @@ class Guest {
 
     const query = `
       INSERT INTO guests
-        (name, phone, email, guest_type, booking_id, invitation_id, rsvp_token, status, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (name, phone, email, guest_type,  invitation_id, rsvp_token, status, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
 
@@ -30,7 +29,6 @@ class Guest {
       phone,
       email,
       guest_type,
-      booking_id,
       invitation_id,
       rsvp_token,
       status,
@@ -98,7 +96,7 @@ class Guest {
    * Update guest
    */
   static async update(id, data) {
-    const { name, phone, email, guest_type, booking_id, status, metadata } = data;
+    const { name, phone, email, guest_type, status, metadata } = data;
 
     const query = `
       UPDATE guests
@@ -107,7 +105,6 @@ class Guest {
         phone = COALESCE($3, phone),
         email = COALESCE($4, email),
         guest_type = COALESCE($5, guest_type),
-        booking_id = COALESCE($6, booking_id),
         invitation_id = COALESCE($7, invitation_id),
         rsvp_token = COALESCE($8, rsvp_token),
         status = COALESCE($9, status),
@@ -123,7 +120,6 @@ class Guest {
       phone,
       email,
       guest_type,
-      booking_id,
       invitation_id,
       rsvp_token,
       status,
@@ -168,12 +164,12 @@ class Guest {
           }
 
           const query = `
-            INSERT INTO guests (name, phone, email, guest_type, booking_id, invitation_id, rsvp_token, status, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO guests (name, phone, email, guest_type, invitation_id, rsvp_token, status, metadata)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
           `;
 
-          const result = await client.query(query, [name, phone, email, guest_type, booking_id, invitation_id, nanoid(10), 0, metadata]);
+          const result = await client.query(query, [name, phone, email, guest_type, invitation_id, nanoid(10), 0, metadata]);
           results.successful.push(result.rows[0]);
         } catch (error) {
           results.failed.push({ data: guestData, error: error.message });

@@ -83,7 +83,7 @@ CREATE TABLE bookings (
 );
 
 -- RBAC Model
-
+CREATE TYPE user_role AS ENUM ('admin', 'host', 'guest');
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -93,9 +93,9 @@ CREATE TABLE users (
     role user_role NOT NULL DEFAULT 'guest',
     name VARCHAR(255) NOT NULL,
     metadata JSONB DEFAULT '{}',
-    building_id UUID REFERENCES buildings(id),
-    unit_id UUID REFERENCES units(id),
-    booking_id UUID REFERENCES bookings(id),
+    -- building_id UUID REFERENCES buildings(id),
+    -- unit_id UUID REFERENCES units(id),
+    -- booking_id UUID REFERENCES bookings(id),
     google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -209,7 +209,7 @@ CREATE TABLE venues (
 -- Guests table
 CREATE TABLE guests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID REFERENCES bookings(id),
+    -- booking_id UUID REFERENCES bookings(id),
     invitation_id UUID REFERENCES invitations(id),
     name VARCHAR(255) NOT NULL,
     guest_type VARCHAR(255),
@@ -325,8 +325,8 @@ CREATE TABLE templates(
     template_name VARCHAR(100),
     template_key VARCHAR(100),
     template_image VARCHAR(200),
-    template_sections JSONB NOT NULL,
-    template_data JSONB DEFAULT '{}',
+    -- template_sections JSONB DEFAULT '{}',
+    -- template_data JSONB DEFAULT '{}',
     is_active boolean DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -350,7 +350,7 @@ CREATE TABLE template_sections(
 CREATE TABLE invitation_data(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
-    template_sections_id UUID NOT NULL REFERENCES template_sections(id) ON DELETE CASCADE,
+    template_section_id UUID NOT NULL REFERENCES template_sections(id) ON DELETE CASCADE,
     data JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
