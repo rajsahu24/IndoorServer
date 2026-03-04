@@ -322,7 +322,60 @@ RETURNING *;
     return result.rows[0];    
   }
 
-  
+  static async checkSlug(slug, invitation_id) {
+    const query = `
+      SELECT COUNT(*) FROM invitations
+      WHERE slug = $1 AND id != $2
+    `;
+    const result = await pool.query(query, [slug, invitation_id]);
+    return parseInt(result.rows[0].count) === 0;
+  }
+
+      static async findBySlug(slug) {
+      const query = `
+      SELECT 
+        inv.id AS invitation_id,
+        t.template_name,
+        t.template_type,
+        idata.id AS invitation_data_id,
+        idata.template_section_id,
+        ts.section_type AS section_name,
+        ts.schema AS section_schema,
+        idata.data
+      FROM invitations inv
+      JOIN templates t 
+        ON inv.invitation_template_id::uuid = t.id
+      LEFT JOIN invitation_data idata 
+        ON inv.id = idata.invitation_id
+      LEFT JOIN template_sections ts 
+        ON idata.template_section_id = ts.id
+      WHERE inv.slug = $1
+      `;
+      const result = await pool.query(query, [slug]);
+      if (result.rows.length === 0) return null;
+
+    // Base template info (same for all rows)
+    const response = {
+      invitation_id: result.rows[0].invitation_id,
+      template_name: result.rows[0].template_name,
+      template_type: result.rows[0].template_type,
+    };
+
+    // Loop through sections
+    for (const row of result.rows) {
+      if (!row.section_name) continue;
+
+      response[row.section_name] = {
+        
+        invitation_data_id: row.invitation_data_id,
+        template_section_id: row.template_section_id,
+        data: row.data,
+        schema: row.section_schema || null,
+      };
+    }
+
+    return response;
+    }
 }
 
 module.exports = InvitationData;

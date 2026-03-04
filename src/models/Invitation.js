@@ -5,12 +5,13 @@ class Invitation {
   static async create(data, user_id) {
     const { invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id } = data;
     const public_id = nanoid(12);
+    const slug = public_id
     const query = `
-      INSERT INTO invitations (user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO invitations (user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id, slug)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
-    const result = await pool.query(query, [user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id]);
+    const result = await pool.query(query, [user_id, invitation_title, invitation_type, invitation_message, invitation_tag_line, metadata, quick_action, invitation_template_id, public_id, slug]);
     return result.rows[0];
   }
   static async findByUserId(user_id) {
@@ -255,6 +256,25 @@ WHERE i.id = $1
     return result.rows[0];
   }
 
+  static async findBySlug(slug, excludeInvitationId) {
+    const query = `
+      SELECT id FROM invitations
+      WHERE slug = $1 AND id != $2
+    `;
+    const result = await pool.query(query, [slug, excludeInvitationId || '']);
+    return result.rows[0];
+  }
+
+  static async updateSlug(id, slug) {
+    const query = `
+      UPDATE invitations
+      SET slug = $1, updated_at = now()
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await pool.query(query, [slug, id]);
+    return result.rows[0];
+  }
 
 }
 

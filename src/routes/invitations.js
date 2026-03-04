@@ -23,6 +23,6 @@ router.get('/rsvp/:rsvp_token', invitationController.getInvitationByRsvpToken);
 
 router.patch('/guest_rsvp/:rsvp_token', invitationController.updateGuestRsvpStatus);
 router.get('/public/:public_id', invitationController.findByPublicId);
-
+router.patch('/update_slug/invitation/:id', invitationController.updateSlug);
 
 module.exports = router;

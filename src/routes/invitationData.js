@@ -1,9 +1,10 @@
 const express = require('express');
-const router = express.Router();
+const   router = express.Router();
 const upload = require('../middleware/upload');
 const invitationDataController = require('../controllers/InvitationDataController');
 
 router.post('/', upload.single('image'), invitationDataController.create);
+router.get('/check-slug', invitationDataController.checkSlug);
 router.get('/', invitationDataController.getAll);
 router.get('/:id', invitationDataController.getById);
 router.put('/:id', invitationDataController.update);
@@ -17,4 +18,5 @@ router.get(`/public_id/:public_id`, invitationDataController.getDataByPublicId);
 router.get(`/rsvp/:rsvp_token`, invitationDataController.getDataByRsvpToken);
 router.delete('/delete_repeated_entry/invitation/:invitation_id/template_section/:template_section_id/nano_id/:nano_id', invitationDataController.deleteRepeatedData);
 router.patch('/patch_repeated_entry/invitation/:invitation_id/template_section/:template_section_id/nano_id/:nano_id', upload.single('image'), invitationDataController.patchRepeatedEntry);
+router.get(`/slug/:slug`, invitationDataController.getDataBySlug);
 module.exports = router;

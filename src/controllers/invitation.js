@@ -6,6 +6,7 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const XLSX = require('xlsx');
 const e = require('express');
+const InvitationData = require('../models/InvitationData');
 const cloudinary = require('cloudinary').v2;
 
 // Configure Cloudinary
@@ -45,7 +46,7 @@ exports.create = async (req, res) => {
     const eventsList = req.body.events || req.body.event;
 
     let createdEvents = [];
-
+    
     if (eventsList) {
       let eventsArray;
 
@@ -398,3 +399,18 @@ exports.findByPublicId = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
+
+exports.updateSlug = async (req, res) => {
+   try {
+     const { id } = req.params;
+     const { slug } = req.body;
+      const isUnique = await InvitationData.checkSlug(slug, id);
+      if (!isUnique) {
+        return res.status(400).json({ error: 'Slug already in use' });
+      }
+      const invitation = await Invitation.updateSlug(id, slug);
+      res.json(invitation);
+   } catch (error) {
+     res.status(500).json({ error: error.message });
+   }
+  }

@@ -161,7 +161,7 @@ CREATE TABLE hotels (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-    CREATE TYPE invitation_type AS ENUM ('wedding', 'birthday');
+    CREATE TYPE invitation_type AS ENUM ('wedding', 'birthday', 'holi');
 
 CREATE TABLE invitations(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

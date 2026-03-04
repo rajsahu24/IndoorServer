@@ -1,12 +1,13 @@
 const InvitationData = require('../models/InvitationData');
+const Invitation = require('../models/Invitation');
 const fs = require('fs');
 const cloudinary = require('../config/cloudinary');
 const invitationDataController = {
     async create(req, res) {
-        console.log("Creating Invitation Data with body:", req.body);
+        
         try {
-            let { invitation_id, template_section_id, data, is_repeated, image_field_key } = req.body;
-            
+            let { invitation_id, template_section_id, data, is_repeated, slug } = req.body;
+           
             // Parse data if it's a string
             if (typeof data === 'string') {
                 data = JSON.parse(data);
@@ -41,7 +42,12 @@ const invitationDataController = {
                 invitation_id, 
                 template_section_id, 
                 data 
-            }); 
+            });
+
+            if (slug) {
+                await Invitation.updates(invitation_id, { slug });
+            }
+            
             res.status(201).json(invitationData);
         } catch (error) {
             if (req.file?.path && fs.existsSync(req.file.path)) {
@@ -74,6 +80,7 @@ const invitationDataController = {
 
     async update(req, res) {
         try {
+           
             const updated = await InvitationData.update(req.body, {
                 where: { id: req.params.id },
             });
@@ -104,7 +111,7 @@ const invitationDataController = {
     async patchData(req, res) {
         try {
             const { invitation_id, template_section_id } = req.params;
-            let { data, is_repeated } = req.body;
+            let { data, is_repeated, slug } = req.body;
             
             // Parse data if it's a string
             if (typeof data === 'string') {
@@ -140,6 +147,11 @@ const invitationDataController = {
             if (!patchedData) {
                 return res.status(404).json({ error: 'Invitation Data not found' });
             }
+
+            if (slug) {
+                await Invitation.updates(invitation_id, { slug });
+            }
+
             res.json(patchedData);
         } catch (error) {
             if (req.file?.path && fs.existsSync(req.file.path)) {
@@ -311,6 +323,33 @@ const invitationDataController = {
         }
         res.status(500).json({ error: error.message });
       }
+    },
+
+
+
+
+    async checkSlug(req, res) {
+        console.log("Check Slug Request Query:", req.query);
+      try {
+        const { slug, invitation_id } = req.query;
+        const isUnique = await InvitationData.checkSlug(slug, invitation_id);
+        res.json({ isUnique });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    },
+
+        async getDataBySlug(req, res) {
+        try {
+            const { slug } = req.params;
+            const invitationData = await InvitationData.findBySlug(slug);
+            if (!invitationData) {
+                return res.status(404).json({ error: 'Invitation Data not found' });
+            }
+            res.json(invitationData);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     },
 };
 
