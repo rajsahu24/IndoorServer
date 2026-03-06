@@ -347,6 +347,21 @@ CREATE TABLE template_sections(
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
+
+    CREATE TABLE blogs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT,
+    slug TEXT UNIQUE,
+    thumbnail VARCHAR(200),
+    content JSONB,
+    meta_title VARCHAR(250)
+    meta_description VARCHAR(500),
+    status INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+
 CREATE TABLE invitation_data(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,

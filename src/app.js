@@ -57,7 +57,7 @@ const invitationRoutes = require('./routes/invitations');
 const templatesRoutes = require('./routes/template');
 const templateSectionRoutes = require('./routes/templateSection');
 const invitationDataRoutes = require('./routes/invitationData');
-
+const blogRoutes = require('./routes/blog');
 const PORT = process.env.PORT || 5000;
 
 
@@ -98,7 +98,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/template-sections', templateSectionRoutes);
 app.use('/api/invitation-data', invitationDataRoutes);
-
+app.use('/api/blog', blogRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
